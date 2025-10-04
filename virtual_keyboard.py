@@ -409,7 +409,7 @@ class AdvancedGestureKeyboard:
             if results.multi_hand_landmarks:
                 for hand_landmarks in results.multi_hand_landmarks:
                     #Draw landmarks
-                    self,mp_draw.draw_landmarks(
+                    self.mp_draw.draw_landmarks(
                         frame,hand_landmarks,self.mp_hands.HAND_CONNECTIONS
                     )
 
@@ -432,4 +432,174 @@ class AdvancedGestureKeyboard:
             if cv2.waitKey(1)&0xFF==('q'):
                 break
         self.cleanup_camera()
+    def add_visual_feedback(self,frame,gesture,pointing_pos):
+        """Add visual feedback to camera frame"""
+        h,w=frame.shape[:2]
+
+        #Add gesture info
+        cv2.putText(frame,f"Gesture:{gesture}",(10,30),
+                    cv2.FONT_HERSHEY_SIMPLEX,0.8,(0,255,0),2)
+        
+        #Add pointing Indicator
+        if pointing_pos:
+            cv2.circle(frame,pointing_pos,8,(255,0,0),-1)
+            cv2.circle(frame,pointing_pos,15,(255,0,0),2)
+
+            #Map to keyboard and show
+            key=self.map_to_keyboard_advanced(pointing_pos,frame.shape)
+            if key:
+                cv2.putText(frame,f"Key:{key}",(10,70),
+                            cv2.FONT_HERSHEY_SIMPLEX,0.8,(255,255,0),2)
+            
+        #Add keyboard grid overlay
+        self.draw_keyboard_overlay(frame)
+
+        #Add Status info
+        cv2.putText(frame,f"Layout:{self.current_layout}",(10,h-60),
+                    cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,255,255),1)
+        cv2.putText(frame,f"Keys typed:{self.typing_stats['keys_typed']}",(10,h-40),
+                    cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,255,255),1)
+        cv2.putText(frame,f"Press 'q' to Quit",(10,h-20),
+                    cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,255,255),1)
+        
+    def draw_keyboard_overlay(self,frame):
+        """Draw keyboard grid overlay on camera frame"""
+        h,w=frame.shape[:2]
+        layout=self.keyboard_layouts[self.current_layout]
+
+        #draw grid lines
+        total_rows=len(layout)
+        row_height=h//(total_rows+1)
+
+        for i in range(1,total_rows+1):
+            y=i*row_height
+            cv2.line(frame,(0,y),(w,y),(100,100,100),1)
+        
+        #Draw column lines for each row
+        for row_idx,row in enumerate(layout):
+            y=(row_idx+1)*row_height
+            col_width=w//len(row)
+            for i in range(1,len(row)):
+                x=i*col_width
+                cv2.line(frame,(x,y-row_height//2),(x,y+row_height//2),(100,100,100),1)
     
+    def gesture_processing(self):
+        """Enhanced gesture processing"""
+        while self.running:
+            try:
+                gesture,pointing_pos,frame_shape=self.gesture_queue.get(timeout=0.1)
+                current_time=time.time()
+
+                #GUI
+                self.root.after(0,lambda g=gesture:self.gesture_label.config(text=f"Gesture: {g}"))
+
+                #process different gestures
+                if gesture == "point" and pointing_pos:
+                    self.handle_pointing(pointing_pos,frame_shape,current_time)
+                elif gesture=="select":
+                    self.handle_selection(pointing_pos,frame_shape,current_time)
+                elif gesture=="fist":
+                    self.handle_fist()
+                elif gesture=="open":
+                    self.handle_open_hand()
+                
+            except queue.Empty:
+                continue
+            except Exception as e:
+                print(f"Gesture processing error: {e}")
+
+    def handle_pointing(self,pointing_pos,frame_shape,current_time):
+        """Handle pointing gesture"""
+        key=self.map_to_keyboard_advanced(pointing_pos,frame_shape)
+        if key:
+            if key !=self.selection_state['key']:
+                #new key selected
+                self.selection_state={
+                    'key':key,
+                    'start_time':current_time,
+                    'duration':self.sensitivity_var.get(),
+                    'confirmed':False
+                }
+                self.highlight_key(key)
+                self.root.after(0,lambda:self.selection_label.config(text=f"Selection: {key}"))
+            else:
+                #continue selection
+                elapsed=current_time-self.selection_state['start_time']
+                progress=min(elapsed/self.selection_state['duration'],1.0)
+
+                if progress>-1.0 and not self.selection_state['confirmed']:
+                    self.type_key(key)
+                    self.selection_state['confirmed']=True
+                    self.root.after(0,lambda:self.selection_label.config(text=f"Typed: {key}"))
+                else:
+                    #show progress
+                    self.root.after(0,lambda p=progress:self.selection_label.config(text=f"selection: {key} ({int(p*100)}%)"))
+                
+    def handle_selection(self,pointing_pos,frame_shape,current_time):
+        """Handle pinch selection gesture"""
+        if pointing_pos:
+            key=self.map_to_keyboard_advanced(pointing_pos,frame_shape)
+            if key:
+                self.type_key(key)
+                self.root.after(0,lambda:self.selection_label.config(text=f"Quick select: {key}"))
+
+    def handle_fist(self):
+        """Handle fist gesture (Clear selection)"""
+        self.selection_state={'key':None,'start_time':0,'duration':0,'confirmed':False}
+        self.clear_highlights()
+        self.root.after(0,lambda:self.selection_label.config(text="Selection Cleared"))
+
+    def handle_open_hand(self):
+        """Handle open hand gesture (Spectial actions)"""
+        #Could be used for special functions like switching layouts pass
+    
+    def highlight_key(self,key):
+        """Highlight selected key"""
+        self.clear_highlights()
+        if key in self.key_buttons:
+            self.key_buttons[key].config(bg='#ff4444',relief=tk.SUNKEN)
+    
+    def clear_highlights(self):
+        """Clear all key highlights"""
+        for key,btn in self.key_buttons.items():
+            if key in['SPACE']:
+                btn.config(bg='#333333',relief=tk.RAISED)
+            elif key in ['BACKSPACE','ENTER','SHIFT','CTRL']:
+                btn.config(bg='#0066cc',relief=tk.RAISED)
+            elif key in ['QWERTY']:
+                btn.config(bg='#cc6600',relief=tk.RAISED)
+            else:
+                btn.config(bg='#4a4a4a',relief=tk.RAISED)
+            
+    def type_key(self,key):
+        """"Type a key with enhanced functionality"""
+        try:
+            if key =='SPACE':
+                self.keyboard.press(Key.space)
+                self.keyboard.release(Key.space)
+            elif key == 'BACKSPACE':
+                self.keyboard.press(Key.backspace)
+                self.keyboard.release(Key.backspace)
+            elif key=='ENTER':
+                self.keyboard.press(Key.enter)
+                self.keyboard.release(Key.enter)
+            elif key=='SHIFT':
+                self.keyboard.press(Key.shift)
+                self.keyboard.release(Key.shift)
+            elif key =='CTRL':
+                self.keyboard.press(Key.ctrl)
+                self.keyboard.release(Key.ctrl)
+            elif key =='QWERTY':
+                self.layout_var.set('qwerty')
+                self.change_layout()
+                return
+            else:
+                self.keyboard.type(key.lower())
+            
+            #Update stats
+            self.typing_stats['keys_typed']+=1
+            self.root.after(0,lambda:self.stats_label.config(text=f"keys:{self.typing_stats['keys_typed']}"))
+
+            print(f"Typed:{key}")
+        except Exception as e:
+            print(f"Error typing key {key}: {e}")
