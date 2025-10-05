@@ -134,7 +134,7 @@ class MultiHandOverlayKeyboard:
                     self.multi_hand_settings.update(settings.get('multi_hand', {}))
         except Exception as e:
             print(f"Error loading settings: {e}")
-    
+    #here5/10/2025
     def save_settings(self):
         """Save settings to file"""
         try:
@@ -176,17 +176,18 @@ class MultiHandOverlayKeyboard:
                       variable=self.simultaneous_var, command=self.toggle_simultaneous_typing,
                       bg='#2b2b2b', fg='white', selectcolor='#404040',
                       font=('Arial', 10)).pack(anchor=tk.W, padx=10, pady=2)
-
-        #Hand Priority
-        tk.Label(multi_hand_frame,text='Hand Priority:',bg='#2b2b2b',fg='white',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=(10,2))
-
-        self.prioruty_var=tk.StringVar(value=self.multi_hand_settings["hand_priority"])
-        priority_frame=tk.Frame(multi_hand_frame,bg='#2b2b2b')
-        priority_frame.pack(anchor=tk.W,padx=20)
-
-        tk.Radiobutton(priority_frame,text="Both hands",variable=self.prioruty_var,value="both",
-                       command=self.change_hand_priority,bg='#2b2b2b',fg='white',
-                       selectcolor='#404040',font=('Arial',9)).pack(anchor=tk.W)
+        
+        # Hand priority
+        tk.Label(multi_hand_frame, text="Hand Priority:", 
+                bg='#2b2b2b', fg='white', font=('Arial', 10)).pack(anchor=tk.W, padx=10, pady=(10,2))
+        
+        self.priority_var = tk.StringVar(value=self.multi_hand_settings["hand_priority"])
+        priority_frame = tk.Frame(multi_hand_frame, bg='#2b2b2b')
+        priority_frame.pack(anchor=tk.W, padx=20)
+        
+        tk.Radiobutton(priority_frame, text="Both Hands", variable=self.priority_var, value="both",
+                      command=self.change_hand_priority, bg='#2b2b2b', fg='white',
+                      selectcolor='#404040', font=('Arial', 9)).pack(anchor=tk.W)
         tk.Radiobutton(priority_frame, text="Left Hand Only", variable=self.priority_var, value="left",
                       command=self.change_hand_priority, bg='#2b2b2b', fg='white',
                       selectcolor='#404040', font=('Arial', 9)).pack(anchor=tk.W)
@@ -194,68 +195,69 @@ class MultiHandOverlayKeyboard:
                       command=self.change_hand_priority, bg='#2b2b2b', fg='white',
                       selectcolor='#404040', font=('Arial', 9)).pack(anchor=tk.W)
         
-        #Input Mode Section
-        mode_frame=tk.LabelFrame(self.control_window,text="Input Mode",
-                                 bg='#2b2b2b',fg='white',font=('Arial',12,'bold'))
-        mode_frame.pack(fill=tk.X,padx=10,pady=10)
-
-        self.mode_var=tk.StringVar(value=self.current_input_mode)
-
-        tk.Radiobutton(mode_frame,text="Point only (Hold 2.0s)",
-                       variable=self.mode_var,value="point_only",
-                       command=self.change_input_mode,bg='#2b2b2b',fg='white',
-                       selectcolor='#404040',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=2)
+        # Input Mode Section
+        mode_frame = tk.LabelFrame(self.control_window, text="Input Mode", 
+                                  bg='#2b2b2b', fg='white', font=('Arial', 12, 'bold'))
+        mode_frame.pack(fill=tk.X, padx=10, pady=10)
         
-        tk.Radiobutton(mode_frame,text="Pinch only(instant)",
-                       variable=self.mode_var,value="pinch_only",
-                       command=self.change_input_mode,bg='#2b2b2b',fg='white',
-                       selectcolor='#404040',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=2)
+        self.mode_var = tk.StringVar(value=self.current_input_mode)
         
-        tk.Radiobutton(mode_frame,text="Both (Point + Pinch)",
-                       variable=self.mode_var,value="both",
-                       command=self.change_input_mode,bg='#2b2b2b',fg='white',
-                       selectcolor='#404040',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=2)
+        tk.Radiobutton(mode_frame, text="Point Only (Hold 2.0s)", 
+                      variable=self.mode_var, value="point_only",
+                      command=self.change_input_mode, bg='#2b2b2b', fg='white',
+                      selectcolor='#404040', font=('Arial', 10)).pack(anchor=tk.W, padx=10, pady=2)
         
-        #Display Sttings Section
-        display_frame=tk.LabelFrame(self.control_window,text="Display Setting",
-                                    bg='#2b2b2b',fg='white',font=('Arial',12,'bold'))
-        display_frame.pack(fill=tk.X,padx=10,pady=10)
-
-        #Background Mode toggle
+        tk.Radiobutton(mode_frame, text="Pinch Only (Instant)", 
+                      variable=self.mode_var, value="pinch_only",
+                      command=self.change_input_mode, bg='#2b2b2b', fg='white',
+                      selectcolor='#404040', font=('Arial', 10)).pack(anchor=tk.W, padx=10, pady=2)
+        
+        tk.Radiobutton(mode_frame, text="Both (Point + Pinch)", 
+                      variable=self.mode_var, value="both",
+                      command=self.change_input_mode, bg='#2b2b2b', fg='white',
+                      selectcolor='#404040', font=('Arial', 10)).pack(anchor=tk.W, padx=10, pady=2)
+        
+        # Display Settings Section
+        display_frame = tk.LabelFrame(self.control_window, text="Display Settings", 
+                                     bg='#2b2b2b', fg='white', font=('Arial', 12, 'bold'))
+        display_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        # Background mode toggle
         self.bg_mode_var = tk.BooleanVar(value=self.display_settings["background_mode"])
         tk.Checkbutton(display_frame, text="Background Mode (Transparent)", 
                       variable=self.bg_mode_var, command=self.toggle_background_mode,
                       bg='#2b2b2b', fg='white', selectcolor='#404040',
                       font=('Arial', 10)).pack(anchor=tk.W, padx=10, pady=2)
         
-        #Show Camera toggle
-        self.show_camera_var=tk.BooleanVar(value=self.display_settings["show_camera"])
-        tk.Checkbutton(display_frame,text="Show Camera Feed",
-                       variable=self.show_camera_var,command=self.toggle_camera_display,
-                       bg='#2b2b2b',fg='white',selectcolor='#404040',
-                       font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=2)
+        # Show camera toggle
+        self.show_camera_var = tk.BooleanVar(value=self.display_settings["show_camera"])
+        tk.Checkbutton(display_frame, text="Show Camera Feed", 
+                      variable=self.show_camera_var, command=self.toggle_camera_display,
+                      bg='#2b2b2b', fg='white', selectcolor='#404040',
+                      font=('Arial', 10)).pack(anchor=tk.W, padx=10, pady=2)
         
-        #Show hand labels
-        self.show_labels_var=tk.BooleanVar(value=self.display_settings["show_hand_labels"])
-        tk.Checkbutton(display_frame,text="Show Hand Labels",
-                       variable=self.show_labels_var,command=self.toggle_hand_labels,
-                       bg='#2b2b2b',fg='white',selectcolor='#404040',
-                       font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=2)
+        # Show hand labels
+        self.show_labels_var = tk.BooleanVar(value=self.display_settings["show_hand_labels"])
+        tk.Checkbutton(display_frame, text="Show Hand Labels", 
+                      variable=self.show_labels_var, command=self.toggle_hand_labels,
+                      bg='#2b2b2b', fg='white', selectcolor='#404040',
+                      font=('Arial', 10)).pack(anchor=tk.W, padx=10, pady=2)
         
-        #Window Transparency
-        tk.Label(display_frame,text="Keyboard Transparency:",
-                 bg='#2b2b2b',fg='white',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=(10,2))
-        self.alpha_var=tk.DoubleVar(value=self.display_settings["window_alpha"])
-        alpha_scale=tk.Scale(display_frame,from_=0.3,to=1.0,resolution=0.1,
-                             variable=self.alpha_var,orient=tk.HORIZONTAL,
-                             command=self.change_transparency,
-                             bg='#2b2b2b',fg='white',highlightbackground='#2b2b2b',
-                             length=200)
-        alpha_scale.pack(padx=10,pady=2)
-
-        #Keyboard size
-        tk.Label(display_frame,text="Keyboard Size:",
-                 bg='#2b2b2b',fg='white',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=(10,2))
+        # Window transparency
+        tk.Label(display_frame, text="Keyboard Overlay Transparency:", 
+                bg='#2b2b2b', fg='white', font=('Arial', 10)).pack(anchor=tk.W, padx=10, pady=(10,2))
+        
+        self.alpha_var = tk.DoubleVar(value=self.display_settings["window_alpha"])
+        alpha_scale = tk.Scale(display_frame, from_=0.3, to=1.0, resolution=0.1,
+                              variable=self.alpha_var, orient=tk.HORIZONTAL,
+                              command=self.change_transparency,
+                              bg='#2b2b2b', fg='white', highlightbackground='#2b2b2b',
+                              length=200)
+        alpha_scale.pack(padx=10, pady=2)
+        
+        # Keyboard size
+        tk.Label(display_frame, text="Keyboard Size:", 
+                bg='#2b2b2b', fg='white', font=('Arial', 10)).pack(anchor=tk.W, padx=10, pady=(10,2))
         
         self.size_var = tk.DoubleVar(value=self.display_settings["keyboard_size"])
         size_scale = tk.Scale(display_frame, from_=0.4, to=0.8, resolution=0.1,
@@ -265,99 +267,101 @@ class MultiHandOverlayKeyboard:
                              length=200)
         size_scale.pack(padx=10, pady=2)
 
-        #Selection duration
-        tk.Label(display_frame,text="point Hold Duration(Seconds):",
-                 bg='#2b2b2b',fg='white',font=('Arial,10')).pack(anchor=tk.W,padx=10,pady=(10,2))
+        # Selection duration
+        tk.Label(display_frame, text="Point Hold Duration (seconds):", 
+                bg='#2b2b2b', fg='white', font=('Arial', 10)).pack(anchor=tk.W, padx=10, pady=(10,2))
+
+        self.duration_var = tk.DoubleVar(value=self.display_settings["selection_duration"])
+        duration_scale = tk.Scale(display_frame, from_=1.0, to=5.0, resolution=0.5,
+                                 variable=self.duration_var, orient=tk.HORIZONTAL,
+                                 command=self.change_selection_duration,
+                                 bg='#2b2b2b', fg='white', highlightbackground='#2b2b2b',
+                                 length=200)
+        duration_scale.pack(padx=10, pady=2)
+
+        # Window transparency
+        tk.Label(display_frame, text="Window Transparency:", 
+                bg='#2b2b2b', fg='white', font=('Arial', 10)).pack(anchor=tk.W, padx=10, pady=(10,2))
         
-        self.duration_var=tk.DoubleVar(value=self.display_settings["selection_duration"])
-        duration_scale=tk.Scale(display_frame,from_=1.0,to=5.0,resolution=0.5,
-                                variable=self.duration_var,orient=tk.HORIZONTAL,
-                                command=self.change_selection_duration,
-                                bg='#2b2b2b',fg='white',highlightbackground='#2b2b2b',
-                                length=200)
-        duration_scale.pack(padx=10,pady=2)
-
-        #Window transparency
-        tk.Label(display_frame,text="Window Transparency:",
-                 bg='#2b2b2b',fg='white',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=(10,2))
+        self.window_transparency_var = tk.DoubleVar(value=self.display_settings["window_transparency"])
+        window_transparency_scale = tk.Scale(display_frame, from_=0.2, to=1.0, resolution=0.1,
+                             variable=self.window_transparency_var, orient=tk.HORIZONTAL,
+                             command=self.change_window_transparency,
+                             bg='#2b2b2b', fg='white', highlightbackground='#2b2b2b',
+                             length=200)
+        window_transparency_scale.pack(padx=10, pady=2)
         
-        self.window_transparency_var=tk.DoubleVar(value=self.display_settings["window_transparency"])
-        window_transparency_scale=tk.Scale(display_frame,from_=0.2,to=1.0,resolution=0.1,
-                                           variable=self.window_transparency_var,orient=tk.HORIZONTAL,
-                                           command=self.change_window_transparemcy,
-                                           bg='@2b2b2b',fg='white',highlightbackground='#2b2b2b',
-                                           length=200)
-        window_transparency_scale.pack(padx=10,pady=2)
-
-        #Control Buttons Section
-        control_frame=tk.LabelFrame(self.control_window,text="Controls",
-                                    bg='#2b2b2b',fg='white',font=('Arial',12,'bold'))
-        control_frame.pack(fill=tk.X,padx=10,pady=10)
-
-        button_frame=tk.Frame(control_frame,bg='#2b2b2b')
+        # Control Buttons Section
+        control_frame = tk.LabelFrame(self.control_window, text="Controls", 
+                                     bg='#2b2b2b', fg='white', font=('Arial', 12, 'bold'))
+        control_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        button_frame = tk.Frame(control_frame, bg='#2b2b2b')
         button_frame.pack(pady=10)
-
-        tk.Button(button_frame,text="Toggle Keyboard",command=self.toggle_keyboard_visibility,
-                  bh='#404040',fg='white',font=('Arial',10),width=15).pack(side=tk.LEFT,padx=5)
         
-        tk.Button(button_frame,text="Reset Position",command=self.reset_window_position,
-                  bg='#404040',fg='white',font=('Arial',10),width=15).pack(side=tk.LEFT,padx=5)
-       
-        tk.Button(button_frame,text="Recalibrate",command=self.recalibrate_hand_tracking,
-                  bg='#2b2b2b',fg='white',font=('Arial',10),width=15).pack(side=tk.LEFT,padx=5)
+        tk.Button(button_frame, text="Toggle Keyboard", command=self.toggle_keyboard_visibility,
+                 bg='#404040', fg='white', font=('Arial', 10), width=15).pack(side=tk.LEFT, padx=5)
         
-        #Status Section
-        status_frame=tk.LabelFrame(self.control_window,text="Status",
-                                   bg='#2b2b2b',fg='white',font=('Arial',12,'bold'))
-        status_frame.pack(fill=tk.X,padx=10,pady=10)
-
-        self.status_label=tk.Label(status_frame,text="Ready",
-                                   bg='#2b2b2b',fg='#00ff00',font=('Arial',10))
+        tk.Button(button_frame, text="Reset Position", command=self.reset_window_position,
+                 bg='#404040', fg='white', font=('Arial', 10), width=15).pack(side=tk.LEFT, padx=5)
+        
+        tk.Button(button_frame, text="Recalibrate", command=self.recalibrate_hand_tracking,
+                 bg='#404040', fg='white', font=('Arial', 10), width=15).pack(side=tk.LEFT, padx=5)
+        
+        # Status Section
+        status_frame = tk.LabelFrame(self.control_window, text="Status", 
+                                    bg='#2b2b2b', fg='white', font=('Arial', 12, 'bold'))
+        status_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        self.status_label = tk.Label(status_frame, text="Ready", 
+                                    bg='#2b2b2b', fg='#00ff00', font=('Arial', 10))
         self.status_label.pack(pady=5)
-
-        self.left_hand_status=tk.Label(status_frame,text="Left Hand:None",
-                                       bg='#2b2b2b',fg='#ffff00',font=('Arial',10))
+        
+        self.left_hand_status = tk.Label(status_frame, text="Left Hand: None", 
+                                        bg='#2b2b2b', fg='#ffff00', font=('Arial', 10))
         self.left_hand_status.pack(pady=2)
-
-        self.right_hand_status=tk.Label(status_frame,text="Right Hand: None",
-                                        bg='#2b2b2b',fg='#ffff00',font=('Arial',10))
+        
+        self.right_hand_status = tk.Label(status_frame, text="Right Hand: None", 
+                                         bg='#2b2b2b', fg='#ffff00', font=('Arial', 10))
         self.right_hand_status.pack(pady=2)
-
-        self.mode_status=tk.Label(status_frame,text=f"Mode:{self.current_input_mode}",
-                                  bg='#2b2b2b',fg='#00ffff',font=('Arial',10))
+        
+        self.mode_status = tk.Label(status_frame, text=f"Mode: {self.current_input_mode}", 
+                                   bg='#2b2b2b', fg='#00ffff', font=('Arial', 10))
         self.mode_status.pack(pady=2)
+        
+        # Instructions
+        instructions = tk.Text(self.control_window, height=8, width=50, 
+                              bg='#1a1a1a', fg='white', font=('Arial', 9))
+        instructions.pack(padx=10, pady=10)
+        
+        instructions.insert(tk.END, """MULTI-HAND OVERLAY CONTROLS:
+• Both hands can type simultaneously
+• Left hand = Blue indicators
+• Right hand = Red indicators
+• Background mode for transparent overlay
+• Works over other applications
 
-        #Instructions
-        instructions=tk.Text(self.control_window,height=8,width=50,
-                             bg='#1a1a1a',fg='white',font=('Arial',2))
-        instructions.pack(padx=10,pady=10)
+GESTURES: POINT, PINCH, FIST (same for both hands)
 
-        instructions.insert(tk.END,"""MULTI-HAND OVERLAY CONTROLS:
-                            • Both hands can type simultaneously
-                            • Left hand=Blue indicators
-                            • Right hand = Red indicators
-                            • Background mode for transprent overlay
-                            • Works over other applications
-
-                            GESTURES: POINT,PINCH,FIST(same for both hands)
-                            
-                            KEYBOARD SHORTCUTS:
-                            • R: Recalibrate hand tracking
-                            • B: Toggle background mode
-                            • C: Toggle Camera display
-                            • H: Toggle help text
-                            • K: Toggle keyboard visibility
-                            • T: Toggle transparency
-                            • D: Toggle debug mode
-                            • Q: Quit appliction""")
+KEYBOARD SHORTCUTS:
+• R: Recalibrate hand tracking
+• B: Toggle background mode
+• C: Toggle camera display
+• H: Toggle help text
+• K: Toggle keyboard visibility
+• T: Toggle transparency
+• D: Toggle debug mode
+• Q: Quit application""")
+        
         instructions.config(state=tk.DISABLED)
-
-        #Handle window closing
-        self.control_window.protocol("WM_DELETE_WINDOW",self.on_control_window_close)
-
-        #Start control window in separater thread
-        self.control_thread=threading.thread(target=self.run_control_window,daemon=True)
+        
+        # Handle window closing
+        self.control_window.protocol("WM_DELETE_WINDOW", self.on_control_window_close)
+        
+        # Start control window in separate thread
+        self.control_thread = threading.Thread(target=self.run_control_window, daemon=True)
         self.control_thread.start()
+    
     def run_control_window(self):
         """Run control window mainloop"""
         self.control_window.mainloop()
@@ -365,7 +369,138 @@ class MultiHandOverlayKeyboard:
     def on_control_window_close(self):
         """Handle control window closing"""
         self.save_settings()
-        self.running=False
-        self.controls_window.quit()
+        self.running = False
+        self.control_window.quit()
     
+    def toggle_multi_hand(self):
+        """Toggle multi-hand tracking"""
+        self.multi_hand_settings["enabled"] = self.multi_hand_var.get()
+        # Update MediaPipe settings
+        max_hands = 2 if self.multi_hand_settings["enabled"] else 1
+        self.hands = self.mp_hands.Hands(
+            static_image_mode=False,
+            max_num_hands=max_hands,
+            min_detection_confidence=0.7,
+            min_tracking_confidence=0.5
+        )
+        print(f"Multi-hand tracking: {self.multi_hand_settings['enabled']}")
     
+    def toggle_simultaneous_typing(self):
+        """Toggle simultaneous typing"""
+        self.multi_hand_settings["simultaneous_typing"] = self.simultaneous_var.get()
+        print(f"Simultaneous typing: {self.multi_hand_settings['simultaneous_typing']}")
+    
+    def change_hand_priority(self):
+        """Change hand priority"""
+        self.multi_hand_settings["hand_priority"] = self.priority_var.get()
+        print(f"Hand priority: {self.multi_hand_settings['hand_priority']}")
+    
+    def toggle_hand_labels(self):
+        """Toggle hand labels display"""
+        self.display_settings["show_hand_labels"] = self.show_labels_var.get()
+        print(f"Show hand labels: {self.display_settings['show_hand_labels']}")
+    
+    def change_input_mode(self):
+        """Change input mode based on selection"""
+        self.current_input_mode = self.mode_var.get()
+        self.overlay_dirty = True
+        self.mode_status.config(text=f"Mode: {self.current_input_mode}")
+        print(f"Input mode changed to: {self.current_input_mode}")
+    
+    def toggle_background_mode(self):
+        """Toggle background mode"""
+        self.display_settings["background_mode"] = self.bg_mode_var.get()
+        print(f"Background mode: {self.display_settings['background_mode']}")
+    
+    def toggle_camera_display(self):
+        """Toggle camera display"""
+        self.display_settings["show_camera"] = self.show_camera_var.get()
+        print(f"Show camera: {self.display_settings['show_camera']}")
+    
+    def change_transparency(self, value):
+        """Change keyboard overlay transparency"""
+        self.display_settings["window_alpha"] = float(value)
+    
+    def change_keyboard_size(self, value):
+        """Change keyboard size"""
+        self.display_settings["keyboard_size"] = float(value)
+        self.overlay_dirty = True
+    
+    def change_selection_duration(self, value):
+        """Change selection duration for POINT gesture"""
+        self.display_settings["selection_duration"] = float(value)
+        self.selection_duration = float(value)
+        print(f"Point hold duration changed to: {value} seconds")
+    
+    def change_window_transparency(self, value):
+        """Change overall window transparency"""
+        self.display_settings["window_transparency"] = float(value)
+    
+    def toggle_keyboard_visibility(self):
+        """Toggle keyboard visibility"""
+        self.keyboard_visible = not self.keyboard_visible
+        print(f"Keyboard visible: {self.keyboard_visible}")
+    
+    def reset_window_position(self):
+        """Reset camera window position"""
+        print("Window position reset")
+
+    def recalibrate_hand_tracking(self):
+        """Recalibrate hand tracking parameters"""
+        print("Recalibrating hand tracking...")
+        # Recreate the hands object with adjusted parameters
+        self.hands = self.mp_hands.Hands(
+            static_image_mode=False,
+            max_num_hands=2,
+            min_detection_confidence=0.7,
+            min_tracking_confidence=0.5
+        )
+        # Reset hand states
+        for hand_label in ["left", "right"]:
+            self.hand_states[hand_label]["gesture"] = "none"
+            self.hand_states[hand_label]["selected_key"] = None
+        
+        self.status_label.config(text="Recalibrated hand tracking")
+    
+    def calculate_distance(self, point1, point2):
+        """Calculate distance between two points"""
+        return math.sqrt((point1.x - point2.x)**2 + (point1.y - point2.y)**2)
+    
+    def detect_hand_gesture(self, landmarks):
+        """Detect gesture for a single hand with improved accuracy"""
+        if not landmarks:
+            return "none"
+        
+        # Get key points
+        thumb_tip = landmarks[4]
+        thumb_ip = landmarks[3]
+        index_tip = landmarks[8]
+        index_pip = landmarks[6]
+        index_mcp = landmarks[5]
+        middle_tip = landmarks[12]
+        middle_pip = landmarks[10]
+        ring_tip = landmarks[16]
+        ring_pip = landmarks[14]
+        pinky_tip = landmarks[20]
+        pinky_pip = landmarks[18]
+        
+        # Calculate relative positions (more robust than absolute y coordinates)
+        index_extended = (index_tip.y < index_pip.y) and (index_tip.y < index_mcp.y)
+        middle_extended = middle_tip.y < middle_pip.y
+        ring_extended = ring_tip.y < ring_pip.y
+        pinky_extended = pinky_tip.y < pinky_pip.y
+        
+        # Calculate thumb-index distance for pinch
+        thumb_index_dist = self.calculate_distance(thumb_tip, index_tip)
+        
+        # Gesture classification with improved logic
+        if thumb_index_dist < 0.06:  # Slightly more lenient pinch threshold
+            return "pinch"
+        elif index_extended and not middle_extended and not ring_extended and not pinky_extended:
+            # Only index finger extended - POINT gesture
+            return "point"
+        elif not index_extended and not middle_extended and not ring_extended and not pinky_extended:
+            # All fingers closed - FIST gesture
+            return "fist"
+        else:
+            return "none"
