@@ -254,4 +254,118 @@ class MultiHandOverlayKeyboard:
         alpha_scale.pack(padx=10,pady=2)
 
         #Keyboard size
+        tk.Label(display_frame,text="Keyboard Size:",
+                 bg='#2b2b2b',fg='white',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=(10,2))
         
+        self.size_var = tk.DoubleVar(value=self.display_settings["keyboard_size"])
+        size_scale = tk.Scale(display_frame, from_=0.4, to=0.8, resolution=0.1,
+                             variable=self.size_var, orient=tk.HORIZONTAL,
+                             command=self.change_keyboard_size,
+                             bg='#2b2b2b', fg='white', highlightbackground='#2b2b2b',
+                             length=200)
+        size_scale.pack(padx=10, pady=2)
+
+        #Selection duration
+        tk.Label(display_frame,text="point Hold Duration(Seconds):",
+                 bg='#2b2b2b',fg='white',font=('Arial,10')).pack(anchor=tk.W,padx=10,pady=(10,2))
+        
+        self.duration_var=tk.DoubleVar(value=self.display_settings["selection_duration"])
+        duration_scale=tk.Scale(display_frame,from_=1.0,to=5.0,resolution=0.5,
+                                variable=self.duration_var,orient=tk.HORIZONTAL,
+                                command=self.change_selection_duration,
+                                bg='#2b2b2b',fg='white',highlightbackground='#2b2b2b',
+                                length=200)
+        duration_scale.pack(padx=10,pady=2)
+
+        #Window transparency
+        tk.Label(display_frame,text="Window Transparency:",
+                 bg='#2b2b2b',fg='white',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=(10,2))
+        
+        self.window_transparency_var=tk.DoubleVar(value=self.display_settings["window_transparency"])
+        window_transparency_scale=tk.Scale(display_frame,from_=0.2,to=1.0,resolution=0.1,
+                                           variable=self.window_transparency_var,orient=tk.HORIZONTAL,
+                                           command=self.change_window_transparemcy,
+                                           bg='@2b2b2b',fg='white',highlightbackground='#2b2b2b',
+                                           length=200)
+        window_transparency_scale.pack(padx=10,pady=2)
+
+        #Control Buttons Section
+        control_frame=tk.LabelFrame(self.control_window,text="Controls",
+                                    bg='#2b2b2b',fg='white',font=('Arial',12,'bold'))
+        control_frame.pack(fill=tk.X,padx=10,pady=10)
+
+        button_frame=tk.Frame(control_frame,bg='#2b2b2b')
+        button_frame.pack(pady=10)
+
+        tk.Button(button_frame,text="Toggle Keyboard",command=self.toggle_keyboard_visibility,
+                  bh='#404040',fg='white',font=('Arial',10),width=15).pack(side=tk.LEFT,padx=5)
+        
+        tk.Button(button_frame,text="Reset Position",command=self.reset_window_position,
+                  bg='#404040',fg='white',font=('Arial',10),width=15).pack(side=tk.LEFT,padx=5)
+       
+        tk.Button(button_frame,text="Recalibrate",command=self.recalibrate_hand_tracking,
+                  bg='#2b2b2b',fg='white',font=('Arial',10),width=15).pack(side=tk.LEFT,padx=5)
+        
+        #Status Section
+        status_frame=tk.LabelFrame(self.control_window,text="Status",
+                                   bg='#2b2b2b',fg='white',font=('Arial',12,'bold'))
+        status_frame.pack(fill=tk.X,padx=10,pady=10)
+
+        self.status_label=tk.Label(status_frame,text="Ready",
+                                   bg='#2b2b2b',fg='#00ff00',font=('Arial',10))
+        self.status_label.pack(pady=5)
+
+        self.left_hand_status=tk.Label(status_frame,text="Left Hand:None",
+                                       bg='#2b2b2b',fg='#ffff00',font=('Arial',10))
+        self.left_hand_status.pack(pady=2)
+
+        self.right_hand_status=tk.Label(status_frame,text="Right Hand: None",
+                                        bg='#2b2b2b',fg='#ffff00',font=('Arial',10))
+        self.right_hand_status.pack(pady=2)
+
+        self.mode_status=tk.Label(status_frame,text=f"Mode:{self.current_input_mode}",
+                                  bg='#2b2b2b',fg='#00ffff',font=('Arial',10))
+        self.mode_status.pack(pady=2)
+
+        #Instructions
+        instructions=tk.Text(self.control_window,height=8,width=50,
+                             bg='#1a1a1a',fg='white',font=('Arial',2))
+        instructions.pack(padx=10,pady=10)
+
+        instructions.insert(tk.END,"""MULTI-HAND OVERLAY CONTROLS:
+                            • Both hands can type simultaneously
+                            • Left hand=Blue indicators
+                            • Right hand = Red indicators
+                            • Background mode for transprent overlay
+                            • Works over other applications
+
+                            GESTURES: POINT,PINCH,FIST(same for both hands)
+                            
+                            KEYBOARD SHORTCUTS:
+                            • R: Recalibrate hand tracking
+                            • B: Toggle background mode
+                            • C: Toggle Camera display
+                            • H: Toggle help text
+                            • K: Toggle keyboard visibility
+                            • T: Toggle transparency
+                            • D: Toggle debug mode
+                            • Q: Quit appliction""")
+        instructions.config(state=tk.DISABLED)
+
+        #Handle window closing
+        self.control_window.protocol("WM_DELETE_WINDOW",self.on_control_window_close)
+
+        #Start control window in separater thread
+        self.control_thread=threading.thread(target=self.run_control_window,daemon=True)
+        self.control_thread.start()
+    def run_control_window(self):
+        """Run control window mainloop"""
+        self.control_window.mainloop()
+    
+    def on_control_window_close(self):
+        """Handle control window closing"""
+        self.save_settings()
+        self.running=False
+        self.controls_window.quit()
+    
+    
