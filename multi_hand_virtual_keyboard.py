@@ -504,3 +504,140 @@ KEYBOARD SHORTCUTS:
             return "fist"
         else:
             return "none"
+    
+    def get_hand_pointing_position(self, landmarks, frame_shape):
+        """Get index finger tip position for a hand"""
+        if landmarks:
+            index_tip = landmarks[8]
+            h, w = frame_shape[:2]
+            x = int(index_tip.x * w)
+            y = int(index_tip.y * h)
+            return (x, y)
+        return None
+    
+    def determine_hand_label(self, hand_landmarks, handedness):
+        """Determine if hand is left or right"""
+        if handedness and len(handedness.classification) > 0:
+            # MediaPipe returns "Left" or "Right" from camera perspective
+            label = handedness.classification[0].label
+            # Fix the hand labeling - don't flip since camera is already mirrored
+            return label.lower()
+        
+        # Fallback: determine by thumb position
+        thumb_tip = hand_landmarks.landmark[4]
+        thumb_ip = hand_landmarks.landmark[3]
+        
+        if thumb_tip.x > thumb_ip.x:
+            return "right"
+        else:
+            return "left"
+    
+    def create_fullscreen_overlay(self, frame_shape):#here5/10/2025
+        """Create fullscreen keyboard overlay with multi-hand indicators and improved bottom row detection"""
+        h, w = frame_shape[:2]
+        overlay = np.zeros((h, w, 3), dtype=np.uint8)
+        
+        layout = self.keyboard_layouts[self.current_layout]
+        
+        # Calculate keyboard dimensions with better spacing
+        keyboard_height = int(h * self.display_settings["keyboard_size"])
+        keyboard_width = int(w * 0.95)  # Slightly wider for better key spacing
+        
+        # Move keyboard up to ensure bottom rows are more accessible
+        keyboard_start_y = int(h * 0.35)  # Start at 35% from top instead of bottom-based
+        keyboard_start_x = (w - keyboard_width) // 2
+        
+        # Calculate key dimensions with improved spacing
+        total_rows = len(layout)
+        key_height = (keyboard_height - 20) // total_rows  # Account for row spacing
+        
+        self.key_positions = {}
+        
+        for row_idx, row in enumerate(layout):
+            # Add spacing between rows
+            row_y = keyboard_start_y + (row_idx * (key_height + 4))
+            
+            # Calculate key width for this specific row
+            row_key_width = (keyboard_width - 20) // len(row)  # Account for key spacing
+            
+            # Center the row
+            row_start_x = keyboard_start_x + (keyboard_width - (len(row) * row_key_width)) // 2
+            
+            for col_idx, key in enumerate(row):
+                key_x = row_start_x + (col_idx * row_key_width)
+                
+                # Store key position with improved bounds
+                self.key_positions[key] = {
+                    'x': key_x + 2,
+                    'y': row_y + 2,
+                    'width': row_key_width - 4,
+                    'height': key_height - 4,
+                    'row': row_idx,  # Store row index for better mapping
+                    'col': col_idx   # Store column index for better mapping
+                }
+                
+                # Determine key color based on selection state
+                color = (50, 50, 50)  # Default gray
+                border_color = (255, 255, 255)  # Default white border
+                
+                # Check if key is selected by either hand
+                left_selected = self.hand_states["left"]["selected_key"] == key
+                right_selected = self.hand_states["right"]["selected_key"] == key
+                
+                if left_selected and right_selected:
+                    color = (128, 0, 128)  # Purple for both hands
+                    border_color = (255, 0, 255)
+                elif left_selected:
+                    color = (100, 0, 0)  # Dark blue for left hand
+                    border_color = (255, 0, 0)
+                elif right_selected:
+                    color = (0, 0, 100)  # Dark red for right hand
+                    border_color=(0,0,255)
+                elif key in ['POINT','PINCH','BOTH']:
+                    if (key.lower()==self.current_input_mode or key=='BOTH' and self.current_input_mode=='both'):
+                        color=(0,255,0)
+                        border_color=(0,255,0)
+                    else:
+                        color=(100,100,0)
+                elif key=='QUIT':
+                    color=(0,0,150)
+                elif key in['SPACE','BACKSPACE','ENTER']:
+                    color(100,100,100)
+                elif key in ['NUMBERS','LETTERS']:
+                    color=(0,100,200)
+                    
+                #Make bottom row keys more visible
+                if row_idx>=total_rows-2:
+                    border_color=(0,255,255)
+                    #Slightly brighter color for bottom rows
+                    color=(min(color[0]+3,255),min(color[1]+30,255),min(color[2]+30,255))
+                
+                #Draw key background
+                cv2.rectangle(overlay,
+                              (key_x+2,row_y+2),
+                              (key_x+row_key_width-2,row_y+key_height-2),
+                              color,-1)
+                
+                #Draw key border
+                cv2.rectangle(overlay,
+                             (key_x + 2, row_y + 2), 
+                             (key_x + row_key_width - 2, row_y + key_height - 2), 
+                             border_color, 3)  # Thicker border for better visibility
+                
+                #Draw kry text with better sizing
+                font_scale=min(row_key_width,key_height)/100.0
+                font_scale=max(0.5,min(font_scale,1.2))
+
+                text_size=cv2.getTextSize(key,cv2.FONT_HERSHEY_SIMPLEX,font_scale,2)[0]
+                text_x=key_x+(row_key_width-text_size[0])//2
+                text_y=row_y+(key_height+text_size[1])//2
+
+                cv2.putText(overlay,key,(text_x,text_y),cv2.FONT_HERSHEY_SIMPLEX,font_scale,(255,255,255),2)
+        
+        # Draw mode and multi-hand indicators
+        if self.show_mode_indicator:
+            mode_text=f"Mode: {self.current_input_mode.upper}"
+            multi_hand_text=f"Multi-Hand:{'ON' if self.multi_hand_settings['enabled']else 'OFF'}"
+            duration_text=f"Hold Duration: {self.selection_duration}s"
+            bh_mode_text=f"Background:{'ON' if self.display_settings['background_mode'] else 'OFF'}"
+            
