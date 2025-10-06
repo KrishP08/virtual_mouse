@@ -712,4 +712,179 @@ KEYBOARD SHORTCUTS:
             self.current_input_mode='pinch_only'
             self.mode_var.set('pinch_only')
             self.overlay_dirty=True
-            self.mode_status.config(text=f"Mode: {sl}")
+            self.mode_status.config(text=f"Mode: {self.current_input_mode}")
+            return True
+        elif key=="BOTH":
+            self.current_input_mode='both'
+            self.mode_var.set('both')
+            self.overlay_dirty=True
+            self.mode_status.config(text=f"Mode: {self.current_input_mode}")
+            return True
+        elif key =='QUIT':
+            self.running=False
+            return True
+
+        return False
+    def type_key(self,key,hand_label=""):
+        """Type a key with hand identification"""
+        # Handle sepcial keys first
+        if self.handle_special_keys(key):
+            return True
+        
+        if not self.can_type_key(key):
+            return False
+        
+        try:
+            if key =='SPACE':
+                self.keyboard.press(Key.space)
+                self.keyboard.release(Key.space)
+            elif key=='BACKSPACE':
+                self.keyboard.press(key.backspace)
+                self.keyboard.release(key.backspace)
+            elif key=='ENTER':
+                self.keyboard.press(key.enter)
+                self.keyboard.release(key.enter)
+            elif key=='NUMBER':
+                self.current_layout="numbers"
+                self.overlay_dirty=True
+                return True
+            elif key =='LETTERS':
+                self.current_layout="letters"
+                self.overlay_dirty=True
+                return True
+            else:
+                self.keyboard.type(key.lower())
+
+            #Update last typed key info
+            self.last_typed_key=key
+            self.last_typed_time=time.time()
+
+            print(f"Typed: {key} (by {hand_label} hand)")
+            return True
+        
+        except Exception as e:
+            print(f"Error typing key {key}: {e}")
+            return False
+    def draw_multi_hand_indicators(self,frame,hand_data):
+        """Draw indicators for both hands"""
+        # Draw indicators for hands that were recently detected but might be temorarliy lost
+        for hand_label in ["left","right"]:
+            if self.hand_states[hand_label]["pointing_pos"] and self.hand_states[hand_label]["selected_key"]:
+                pointing_pos=self.hand_states[hand_label]["pointing_pos"]
+                if hand_label=="left":
+                    color=(255,0,0)
+                    text_color=(255,100,100)
+                else:
+                    color=(0,0,255)
+                    text_color=(100,100,255)
+
+                #Draw a faded indicator for temporarily lost hands
+                cv2.circle(frame,pointing_pos,8,color,1)
+
+        for hand_info in hand_data:
+            hand_label=hand_info["label"]
+            pointing_pos=hand_info["pointing_pos"]
+            gesture=hand_info["gesture"]
+
+            if not pointing_pos:
+                continue
+
+            #Choose colors bases on hand
+            if hand_label=="left":
+                color=(255,0,0)
+                text_color=(255,100,100)
+            else:
+                color=(0,0,255)
+                text_color=(100,100,255)
+
+            x,y=pointing_pos
+
+            #Draw pointing indicator
+            cv2.circle(frame,(x,y),8,color,-1)
+            cv2.circle(frame,(x,y),15,color,2)
+
+            #Draw hand label if enabled
+            if self.display_settings["show_hand_labels"]:
+                label_text=f"{hand_label.upper()}"
+                cv2.putText(frame,label_text,(x-20,y-25),cv2.FONT_HERSHEY_SIMPLEX,0.5,text_color,2)
+
+            #Draw selection progress for point mode
+            selected_key=self.hand_states[hand_label]["selected_key"]
+            if (gesture=="point" and selected_key and self.input_modes[self.current_input_mode]["point"]):
+                self.draw_selection_progress(frame,pointing_pos,hand_label)
+
+    def draw_selection_progress(self,frame,point,hand_label):
+        """Draw selection progress indicator for a sepcific hand"""
+        if not point:
+            return
+        
+        current_time=time.time()
+        start_time=self.hand_states[hand_label]["selection_start_time"]
+        elapsed=current_time-start_time
+        progress=min(elapsed/self.selection_duration,1.0)
+
+        x,y=point
+        radius=25
+
+        #CHoose color based on hand
+        if hand_label=="left":
+            progress_color=(255,0,0)
+        else:
+            progress_color=(0,0,255)
+        
+        #Draw progress arc
+        angle=int(360*progress)
+        if angle>0:
+            axes=(radius,radius)
+            cv2.ellipse(frame,(x,y),axes,-90,0,angle,progress_color,4)
+
+        #Draw progress text
+        progress_text=f"{int(progress * 100)}"
+        text_size=cv2.getTextSize(progress_text,cv2.FONT_HERSHEY_SIMPLEX,0.5,2)[0]
+        text_x=x-text_size[0]//2
+        text_y=y-35
+        cv2.putText(frame,progress_text,(text_x,text_y),cv2.FONT_HERSHEY_SIMPLEX,progress_color,2)
+    
+    def draw_status_info(self,frame):
+        """Draw status information with multi-hand support"""
+        h,w=frame.shape[:2]
+
+        if not self.display_settings["show_camera"]:
+            return
+        
+        #Multi-hand status
+        left_gesture=self.hand_states["left"]["gesture"]
+        right_gesture=self.hand_states["right"]["gesture"]
+
+        cv2.putText(frame,f"Left Hand: {left_gesture}",(10,30),cv2.FONT_HERSHEY_SIMPLEX,0.7,(255,0,0),2)
+        cv2.putText(frame,f"Right Hand: {right_gesture}",(10,60),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,0,255),2)
+
+        #Selected keys
+        left_key=self.hand_states["left"]["selected_key"]
+        right_key=self.hand_states["right"]["selected_key"]
+
+        if left_key:
+            cv2.putText(frame,f"Left Selected: {left_key}",(10,90),cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,100,100),2)
+        if right_key:
+            cv2.putText(frame,f"Right Selected: {right_key}",(10,120),cv2.FONT_HERSHEY_SIMPLEX,0.6,(100,100,255),2)
+
+        #Input mode and Settings
+        cv2.putText(frame,f"Mode: {self.current_input_mode.upper()}",(10,150),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,255,255),2)
+
+        multi_status = "ON" if self.multi_hand_settings["enabled"] else "OFF"
+        cv2.putText(frame, f"Multi-Hand: {multi_status}", (10, 180), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+        
+        bg_status = "ON" if self.display_settings["background_mode"] else "OFF"
+        cv2.putText(frame, f"Background: {bg_status}", (10, 210), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0) if self.display_settings["background_mode"] else (255, 0, 0), 2)
+
+        #help text
+        if self.show_help:
+            help_text=[
+                f"Hold Duration: {self.selection_duration}s",
+                "Blue = Left Hand,Red = Right Hand",
+                "Both hands can type simultaneously",
+                "Background mode for overlayoperation",
+                "Q: Quit, H: Toggle help,T: Toggle transparency"
+            ]
