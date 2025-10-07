@@ -888,3 +888,126 @@ KEYBOARD SHORTCUTS:
                 "Background mode for overlayoperation",
                 "Q: Quit, H: Toggle help,T: Toggle transparency"
             ]
+
+            for i,text in enumerate(help_text):
+                cv2.putText(frame,"DEBUG MODE ON",(w-200,h-60),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,0,255),2)
+
+                #Show hand positions
+                left_pos=self.hand_states["left"]["pointing_pos"]
+                right_pos=self.hand_states["right"]["pointing_pos"]
+
+                if left_pos:
+                    cv2.putText(frame,f"Left pos: {left_pos}",(10,h-90),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,0,0),1)
+                
+                if right_pos:
+                    cv2.putText(frame,f"Right pos: {right_pos}",(10,h-60),cv2.FONT_HERSHEY_SIMPLEX,0.5,(0,0,255),1)
+
+                #Show key mapping info
+                if left_pos:
+                    left_key=self.map_point_to_key(left_pos)
+                    cv2.putText(frame,f"Left maps to: {left_key}",(10,h-30),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,0,0),1)
+
+                if right_pos:
+                    right_key=self.map_point_to_key(right_pos)
+                    cv2.putText(frame,f"Right maps to: {right_key}",(255,h-30),cv2.FONT_HERSHEY_SIMPLEX,0.5,(0,0,255),1)
+
+    def process_multi_hand_gestures(self,hand_data):
+        """Process gestures for multiple hands"""
+        current_time=time.time()
+        mode_settings=self.input_modes[self.current_input_mode]
+
+        #Update hand states for hands that are no longwe detected
+        current_hand_labels=[hand_info["label"] for hand_info in hand_data]
+        for hand_label in ["left","right"]:
+            if hand_label not in current_hand_labels:
+                #Hand is not currently detected,update its state
+                self.hand_states[hand_label]["gesture"]="none"
+                #Don't clear pointing position or selection immediately to prevernt flickering
+                #Only clear if it's been gone for a while
+                if self.hand_states[hand_label]["selected_key"] and current_time - self.hand_states[hand_label]["selection_start_time"]>3.0:
+                    self.hand_states[hand_label]["selected_key"]=None
+                    self.overlay_dirty=True
+        
+        #Process each hand
+        for hand_info in hand_data:
+            hand_label = hand_info["label"]
+            gesture=hand_info["gesture"]
+            pointing_pos = hand_info["pointing_pos"]
+
+            #Skip if hand is disabled by priority settings
+            priority=self.multi_hand_settings["hand_priority"]
+            if priority != "both" and priority != hand_label:
+                continue
+
+            #update hand state
+            self.hand_states[hand_label]["gesture"]=gesture
+            self.hand_states[hand_label]["pointing_pos"]=pointing_pos
+
+            #Process point gesture
+            if gesture =="point" and pointing_pos and mode_settings["point"]:
+                key =self.map_point_to_key(pointing_pos)
+
+                if key and key !=self.hand_states[hand_label]["selected_key"]:
+                    #New key selected
+                    self.hand_states[hand_label]["selected_key"]=key
+                    self.hand_states[hand_label]["selection_start_time"]=current_time
+                    self.overlay_dirty=True
+
+                elif key==self.hand_states[hand_label]["selected_key"]:
+                    #Continue selecting same key
+                    start_time=self.hand_states[hand_label]["selection_start_time"]
+                    elapsed=current_time-start_time
+
+                    if elapsed >= self.selection_duration:
+                        #Type the key
+                        if self.type_key(key,hand_label):
+                            self.hand_states[hand_label]["selected_key"]=None
+                            self.overlay_dirty=True
+                
+            #process pinch gesture
+            elif gesture == "pinch" and pointing_pos and mode_settings["pinch"]:
+                key=self.map_point_to_key(pointing_pos)
+                if key:
+                    if self.type_key(key,hand_label):
+                        self.hand_states[hand_label]["selected_key"]=None
+                        self.overlay_dirty=True
+            
+            #Process fist gesture
+            elif gesture == f"fist":
+                if self.hand_states[hand_label]["selected_key"]:
+                    self.hand_states[hand_label]["selected_key"]=None
+                    self.overlay_dirty=True
+            
+            #Clear selection if not gesture for while
+            elif gesture == "none":
+                if (self.hand_states[hand_label]["selected_key"] and current_time-self.hand_states[hand_label]["selection_start_time"]>3.0):
+                    self.hand_states[hand_label]["selected_key"]=None
+                    self.overlay_dirty=True
+    
+    def run(self):
+        """Main application loop with multi-hand overlay suppeort"""
+        print("Starting Multi-hand Overlay Gesture Keyboard...")
+        print(f"Multi-hand tracking: {self.multi_hand_settings['enabled']}")
+        print(f"Current input mode: {self.current_input_mode}")
+        print("Use the control window to change settings!")
+
+        #Create camera window with transparency support
+        cv2.namedWindow('Multi-Hand Gesture Keyboard Overlay',cv2.WINDOW_NORMAL)
+
+        #set initial window properties
+        cv2.setWindowProperty('Multi-hand Gesture Keyboard Overlay',cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_NORMAL)
+
+        #Enable transparency (platform-specific)
+        try:
+            # For Windows
+            import ctypes
+            hwnd = ctypes.windll.user32.FindWindowW(None, 'Multi-Hand Gesture Keyboard Overlay')
+            style = ctypes.windll.user32.GetWindowLongA(hwnd, -20)  # GWL_EXSTYLE
+            ctypes.windll.user32.SetWindowLongA(hwnd, -20, style | 0x00080000)  # WS_EX_LAYERED
+            # Set initial transparency
+            ctypes.windll.user32.SetLayerWindowAttributes(hwnd,0,int(255*self.display_settings["window_transparency"]),2)# LWA_ALPHA
+        except Exception as e:
+            print(f"Window transparency might not be fully supported on this platform: {e}")
+            print("Using alternative transparency method...")
+
+        
