@@ -1010,4 +1010,149 @@ KEYBOARD SHORTCUTS:
             print(f"Window transparency might not be fully supported on this platform: {e}")
             print("Using alternative transparency method...")
 
-        
+        while self.running:
+            ret,feame =self.cap.read()
+            if not ret:
+                continue
+
+            #Flip frame for mirror effect
+            frame=cv2.flip(frame,1)
+            h,w=frame.shape[:2]
+
+            #Create a transparent base frame for background mode
+            if self.display_settings["background_mode"]:
+                #Create transparent background
+                display_frame=np.zeros((h,w,4),dtype=np.uint8) # RGBA
+                display_frame[:,:,3]=int(255 * self.display_settings["window_transparency"])#Alpha channel
+            else:
+                #Use camera feed with adjusted transparency
+                display_frame=frame.copy()
+
+            #Process hand detection
+            rgb_frame=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+            results=self.hands.process(rgb_frame)
+
+            hand_data=[]
+
+            if results.multi_hand_landmarks and results.multi_handedness:
+                for hand_landmarks,handedness in zip(results.multi_hand_landmarks,results.multi_handedness):
+                    #Determine hand label
+                    hand_label=self.determine_hand_label(hand_landmarks,handedness)
+
+                    #Draw haand landmarks if camera is visible
+                    if self.display_settings["show_camera"]:
+                        #Use different color for different hands
+                        if hand_label =="left":
+                            landmark_color=(255,0,0)
+                            connection_color=(200,0,0)
+                        else:
+                            landmark_color=(0,0,255)
+                            connection_color=(0,0,200)
+                        
+                        self.mp_draw.draw_landmarks(
+                            display_frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS,
+                            landmark_drawing_spec=mp.solutions.drawing_utils.DrawingSpec(
+                                color=landmark_color, thickness=1, circle_radius=1),
+                            connection_drawing_spec=mp.solutions.drawing_utils.DrawingSpec(
+                                color=connection_color, thickness=1)
+                        )
+
+                    # Detect gesture and pointing position
+                    gesture=self.detect_hand_gesture(hand_landmarks.landmark)
+                    pointing_pos=self.get_hand_pointing_position(hand_landmarks.landmark,frame.shape)
+
+                    hand_data.append({
+                        "label":hand_label,
+                        "gesture":gesture,
+                        "pointing_pos":pointing_pos,
+                        "landmaeks":hand_landmarks
+                    })
+            
+            # Update status labels
+            left_gesture="none"
+            right_gesture="none"
+
+            for hand_info in hand_data:
+                if hand_info["label"]=="left":
+                    left_gesture=hand_info["gesture"]
+                elif hand_info["label"]=="right":
+                    right_gesture=hand_info["gesture"]
+            
+            self.left_hand_status.config(text=f"Left Hand: {left_gesture}")
+            self.right_hand_status.config(text=f"Right Hand: {right_gesture}")
+
+            #Process multi-hand gestures
+            if self.multi_hand_settings["enabled"]:
+                self.process_multi_hand_gestures(hand_data)
+            else:
+                #Single hand mode - use first deteceted hand
+                if hand_data:
+                    self.process_multi_hand_gestures([hand_data[0]])
+
+            #Create or update overlay if needed
+            if self.overlay_dirty or self.overlay_cache is None:
+                self.overlay_cache=self.create_fullscreen_overlay(frame.shape)
+                self.overlay_dirty=False
+            
+            #Handle display modes
+            if self.display_settings["background_mode"]:
+                # Background mode -show only keyboard overlay with transparency
+                if not self.display_settings["show_camera"]:
+                    #Create a semi-teansparent black background
+                    bg=np.zeros_like(frame)
+                    #Belnd overlay with transparent bachground
+                    alpha=self.display_settings["window_alpha"]
+                    display_frame=cv2.addWeighted(bg,1-alpha,self.overlay_cache,alpha,0)
+                else:
+                    #Blend camera with overlay
+                    alpha =self.display_settings["window_alpha"]
+                    display_frame=cv2.addWeighted(display_frame,1-alpha,self.overlay_cache,alpha,0)
+            else:
+                #Normal mode - blend overlay with camera
+                if self.display_settings["show_camera"]:
+                    display_frame=frame.copy()
+                else:
+                    #Show only overlay without camrea
+                    display_frame=np.zeros_like(frame)
+                
+                if self.keyboard_visible:
+                    alpha =self.display_settings["window_alpha"]
+                    display_frame=cv2.addWeighted(display_frame,1-alpha,self.overlay_cache,alpha,0)
+            
+            #Draw multi-hand indicators
+            if hand_data:
+                self.draw_multi_hand_indicators(display_frame,hand_data)
+
+            #Draw status information
+            self.draw_status_info(display_frame)
+
+            #Show frame
+            cv2.imshow('Multi-Hand Gesture Keyboard Overlay',display_frame)
+
+            #Set window properties
+            if self.display_settings["always_on_top"]:
+                cv2.setWindowProperty('Multi-Hand Gesture Keyboard Overlay',cv2.WND_PROP_TOPMOST,1)
+
+                #Update window transparency (platform-specific)
+                try:
+                    # For Windows
+                    import ctypes
+                    hwnd=ctypes.windll.user32.FindWindowW(None,'Multi-hand Gesture Keyboard Overlay')
+                    if hwnd:
+                        ctypes.windll.user32.SetLayeredWindowAttributes(hwnd,0,int(255 * self.display_settings["window_transparency"]),2)
+                except:
+                    pass
+
+                # Handle key presses
+                key_pressed=cv2.waitKey(1) & 0xFF
+                if key_pressed == ord('q'):
+                    break
+                elif key_pressed ==ord('h'):
+                    self.show_help=not self.show_help
+                elif key_pressed == ord('k'):
+                    self.keyboard_visible =not self.keyboard_visible
+                elif key_pressed == ord('t'):
+                    #Toggle transparency with hotkey
+                    new_transparency=0.3 if self.display_settings["window_transparency"]>0.5 else 0.8
+                    self.display_settings["window_transparency"]=new_transparency
+                    self.window_transparency_var.set(new_transparency)
