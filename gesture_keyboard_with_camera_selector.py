@@ -175,4 +175,68 @@ class MultihandOverlayKeyboardWithCamera:
 
         self.camera_info_label.pack(pady=5)
 
+        # Start/Stop camera button
+        self.camera_control_btn = tk.Button(camera_frame,text="Start Camera",command=self.toggle_camera,bg='#006600',fg='white',font=('Arial',10))
+        self.camera_control_btn.pack(pady=5)
+
+        # Multi-Hand setting Section
+        multi_hand_frame = tk.LabelFrame(self.control_window,text="Multi-Hand Setting",bg='#2b2b2b',fg='white',font=('Arial',12,'bold'))
+        multi_hand_frame.pack(fill=tk.X,padx=10,pady=10)
+
+        # Enable multi-hand
+        self.multi_hand_var=tk.Booleanvar(value=self.multi_hand_settings["enabled"])
+        tk.Checkbutton(multi_hand_frame,text="Enable Multi-Hand Tracking",variable=self.multi_hand_var,command=self.toggle_multi_hand,bg='#2b2b2b',fg='white',selectcolor='#404040',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=2)
+
+        # Simultaneous typing
+        self.simultaneous_var= tk.booleanVar(value=self.multi_hand_settings["simultaneous_typing"])
+        tk.Checkbutton(multi_hand_frame,text="Allow Simultaneous typing",variable=self.simultaneous_var,
+                       command=self.toggle_simultaneous_typing,bg='#2b2b2b',fg='white',selectcolor='#404040',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=2)
         
+        # Input Mode Section
+        mode_frame = tk.labelFrame(self.control_window,text="Input Mode",bg='#2b2b2b',fg='white',font=('Arial',12,'bold'))
+        mode_frame.pack(fill=tk.X,padx=10,pady=10)
+
+        self_mode_var = tk.StringVar(value=self.current_input_mode)
+
+        tk.Radiobutton(mode_frame,text="Point only (Hold 2.0s)",variable=self.mode_var,value="point_only",command=self.change_input_mode,bg='#2b2b2b',fg='white',selectcolor='#404040',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=2)
+
+        tk.Radiobutton(mode_frame,text="Pinch Only (Instant)",variable=self.mode_var,value="pinch_only",command=self.change_input_mode,bg='#2b2b2b',fg='white',selectcolor='#404040',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=2)
+
+        tk.Radiobutton(mode_frame,text="Both (Point + Pinch)",variable=self.mode_var,value="both",command=self.change_input_mode,bg='#2b2b2b',fg='white',selectcolor='#404040',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=2)
+
+        #Display Settings Section
+        display_frame=tk.LabelFrame(self.control_window,text="Display Settings",bg='#2b2b2b',f='white',font=('Arial',12,'bold'))
+        display_frame.pack(fill=tk.X,padx=10,pady=10)
+
+        #Background mode toggle
+        self.bg_mode_var=tk.BooleanVar(value=self.display_settings["background_mode"])
+        tk.Checkbutton(display_frame,text="Background Mode (Transparent)",variable=self.bg_mode_var,command=self.toggle_background_mode,bg='#2b2b2b',fg='white',selectcolor='#404040',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=2)
+
+        # Show hand labels
+        self.show_labels_var=tk.BooleanVar(value=self.display_settings['show_hand_labels'])
+        tk.Checkbutton(display_frame,text="show Hand Labels",variable=self.show_labels_var,command=self.toggle_hand_labels,bg='#2b2b2b',fg='white',selectcolor='#404040',font=('Arial',10,)).pack(anchor=tk.W,padx=10,pady=2)
+
+        # Selection duration
+        tk.Label(display_frame,text="Point Hold Diration (seconds):",bg='#2b2b2b',fg='white',font=('Arial',10)).pack(anchor=tk.W,padx=10,pady=(10,2))
+
+        self.duration_var=tk.Doublevar(value=self.display_settings["selection_duration"])
+        duration_scale=tk.Scale(display_frame,from_=1.0,to=5.0,resolution=0.5,variable=self.duration_var,orient=tk.HORIZONTAL,command=self.change_selection_dration,bg='#2b2b2b',fg='white',highlightbackground='#2b2b2b',length=200)
+        duration_scale.pack(padx=10,pady=2)
+
+        #Status Section
+        status_frame =tk.LabelFrame(self.control_window,text="Status",bg='#2b2b2b',fg='white',font=('Arial',12,'bold'))
+        status_frame.pack(fill=tk.X,padx=10,pady=10)
+
+        self.status_label=tk.Label(status_frame,text="ready - Select and Start Camera",bg='#2b2b2b',fg='#ffff00',font=('Arial',10))
+        self.status_label.pack(pady=5)
+
+        self.left_hand_status = tk.Label(status_frame,text="Left Hand: None",bg='#2b2b2b',fg='#ffff00',font=('Arial',10))
+        self.left_hand_status.pack(pady=2)
+
+        self.right_hand_status=tk.Label(status_frame,text="Right Hand: None",bg='#2b2b2b',fg='#ffff00',font=('Arial',10))
+        self.right_hand_status.pack(pady=2)
+
+        self.mode_status=tk.Label(status_frame,text=f"Mode: {self.current_input_mode}",bg='#2b2b2b',fg='#00ffff',font=('Arial',10))
+        self.mode_status.pack(pady=2)
+
+        #Instruction 
