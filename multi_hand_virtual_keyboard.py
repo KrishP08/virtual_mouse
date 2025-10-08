@@ -592,142 +592,152 @@ KEYBOARD SHORTCUTS:
                     border_color = (255, 0, 0)
                 elif right_selected:
                     color = (0, 0, 100)  # Dark red for right hand
-                    border_color=(0,0,255)
-                elif key in ['POINT','PINCH','BOTH']:
-                    if (key.lower()==self.current_input_mode or key=='BOTH' and self.current_input_mode=='both'):
-                        color=(0,255,0)
-                        border_color=(0,255,0)
+                    border_color = (0, 0, 255)
+                elif key in ['POINT', 'PINCH', 'BOTH']:
+                    if (key.lower() == self.current_input_mode or 
+                        (key == 'BOTH' and self.current_input_mode == 'both')):
+                        color = (0, 255, 0)  # Green for active mode
+                        border_color = (0, 255, 0)
                     else:
-                        color=(100,100,0)
-                elif key=='QUIT':
-                    color=(0,0,150)
-                elif key in['SPACE','BACKSPACE','ENTER']:
-                    color(100,100,100)
-                elif key in ['NUMBERS','LETTERS']:
-                    color=(0,100,200)
-                    
-                #Make bottom row keys more visible
-                if row_idx>=total_rows-2:
-                    border_color=(0,255,255)
-                    #Slightly brighter color for bottom rows
-                    color=(min(color[0]+3,255),min(color[1]+30,255),min(color[2]+30,255))
+                        color = (100, 100, 0)  # Dark yellow for mode buttons
+                elif key == 'QUIT':
+                    color = (0, 0, 150)  # Dark red for quit
+                elif key in ['SPACE', 'BACKSPACE', 'ENTER']:
+                    color = (100, 100, 100)  # Gray for special keys
+                elif key in ['NUMBERS', 'LETTERS']:
+                    color = (0, 100, 200)  # Blue for layout switch
                 
-                #Draw key background
-                cv2.rectangle(overlay,
-                              (key_x+2,row_y+2),
-                              (key_x+row_key_width-2,row_y+key_height-2),
-                              color,-1)
+                # Make bottom row keys more visible
+                if row_idx >= total_rows - 2:  # Last two rows
+                    border_color = (0, 255, 255)  # Cyan border for bottom rows
+                    # Slightly brighter color for bottom rows
+                    color = (min(color[0] + 30, 255), min(color[1] + 30, 255), min(color[2] + 30, 255))
                 
-                #Draw key border
-                cv2.rectangle(overlay,
-                             (key_x + 2, row_y + 2), 
-                             (key_x + row_key_width - 2, row_y + key_height - 2), 
-                             border_color, 3)  # Thicker border for better visibility
+                # Draw key background
+                cv2.rectangle(overlay, 
+                            (key_x + 2, row_y + 2), 
+                            (key_x + row_key_width - 2, row_y + key_height - 2), 
+                            color, -1)
                 
-                #Draw kry text with better sizing
-                font_scale=min(row_key_width,key_height)/100.0
-                font_scale=max(0.5,min(font_scale,1.2))
-
-                text_size=cv2.getTextSize(key,cv2.FONT_HERSHEY_SIMPLEX,font_scale,2)[0]
-                text_x=key_x+(row_key_width-text_size[0])//2
-                text_y=row_y+(key_height+text_size[1])//2
-
-                cv2.putText(overlay,key,(text_x,text_y),cv2.FONT_HERSHEY_SIMPLEX,font_scale,(255,255,255),2)
+                # Draw key border
+                cv2.rectangle(overlay, 
+                            (key_x + 2, row_y + 2), 
+                            (key_x + row_key_width - 2, row_y + key_height - 2), 
+                            border_color, 3)  # Thicker border for better visibility
+                
+                # Draw key text with better sizing
+                font_scale = min(row_key_width, key_height) / 100.0
+                font_scale = max(0.5, min(font_scale, 1.2))
+                
+                text_size = cv2.getTextSize(key, cv2.FONT_HERSHEY_SIMPLEX, font_scale, 2)[0]
+                text_x = key_x + (row_key_width - text_size[0]) // 2
+                text_y = row_y + (key_height + text_size[1]) // 2
+                
+                cv2.putText(overlay, key, (text_x, text_y), 
+                          cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), 2)
         
         # Draw mode and multi-hand indicators
         if self.show_mode_indicator:
-            mode_text=f"Mode: {self.current_input_mode.upper}"
-            multi_hand_text=f"Multi-Hand:{'ON' if self.multi_hand_settings['enabled']else 'OFF'}"
-            duration_text=f"Hold Duration: {self.selection_duration}s"
-            bg_mode_text=f"Background:{'ON' if self.display_settings['background_mode'] else 'OFF'}"
-
-            cv2.putText(overlay,mode_text,(20,30),cv2.FONT_HERSHEY_SIMPLEX,0.8,(0,255,255),2)
-            cv2.putText(overlay,multi_hand_text,(20,60),cv2.FONT_HERSHEY_SIMPLEX,0.7,(255,255,0),2)
-            cv2.putText(overlay,duration_text,(20,90),cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,255,0),2)
-            cv2.putText(overlay,bg_mode_text,(20, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0) if self.display_settings['background_mode'] else (255, 0, 0), 2)
-
-            #Add help text for recalibration
-            cv2.putText(overlay,"Press 'R' to recalibrate hand tracking",(w-400,h-30),cv2.FONT_HERSHEY_SIMPLEX,0.6,(200,200,200),2)
+            mode_text = f"Mode: {self.current_input_mode.upper()}"
+            multi_hand_text = f"Multi-Hand: {'ON' if self.multi_hand_settings['enabled'] else 'OFF'}"
+            duration_text = f"Hold Duration: {self.selection_duration}s"
+            bg_mode_text = f"Background: {'ON' if self.display_settings['background_mode'] else 'OFF'}"
+            
+            cv2.putText(overlay, mode_text, (20, 30), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+            cv2.putText(overlay, multi_hand_text, (20, 60), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2)
+            cv2.putText(overlay, duration_text, (20, 90), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+            cv2.putText(overlay, bg_mode_text, (20, 120), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0) if self.display_settings['background_mode'] else (255, 0, 0), 2)
+            
+            # Add help text for recalibration
+            cv2.putText(overlay, "Press 'R' to recalibrate hand tracking", (w - 400, h - 30), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 2)
         
         return overlay
-    def map_point_to_key(self,point):
+    
+    def map_point_to_key(self, point):
         """Map screen point to keyboard key with improved accuracy for all rows"""
-        if not point or not hasattr(self,'key_positions'):
+        if not point or not hasattr(self, 'key_positions'):
             return None
         
-        x,y=point
-
-        #Find the closet key to the pointing position
-        closets_key=None
-        min_distance=float('inf')
-
-        for key,pos in self.key_positions.items():
-            #Calculate center of key
-            key_center_x=pos['x']+pos['width']/2
-            key_center_y=pos['y']+pos['height']/2
-
-            #Calculate distance to key center
-            distance=math.sqrt((x-key_center_x)**2+(y-key_center_y)**2)
-
-            #Apply row-based weighting (give more weight to bottom rows)
-            row_weight=1.0
-            if 'row' in pos:
-                #Bottom rows get more weight(easier to select)
-                if pos['row']>=len(self.keyboard_layouts[self.current_layout])-2:
-                    row_weight=1.3
+        x, y = point
+        
+        # Find the closest key to the pointing position
+        closest_key = None
+        min_distance = float('inf')
+        
+        for key, pos in self.key_positions.items():
+            # Calculate center of key
+            key_center_x = pos['x'] + pos['width'] / 2
+            key_center_y = pos['y'] + pos['height'] / 2
             
-            #Apply weighted distance
-            weighted_distance=distance/row_weight
-
-            #Update closest key if this one is closer
-            if weighted_distance<min_distance:
-                min_distance=weighted_distance
-                closets_key=key
-        #Only return the key if it's within a reasonable distance
-        max_distance=50
-        if min_distance<=max_distance:
-            return closets_key
+            # Calculate distance to key center
+            distance = math.sqrt((x - key_center_x)**2 + (y - key_center_y)**2)
+            
+            # Apply row-based weighting (give more weight to bottom rows)
+            row_weight = 1.0
+            if 'row' in pos:
+                # Bottom rows get more weight (easier to select)
+                if pos['row'] >= len(self.keyboard_layouts[self.current_layout]) - 2:
+                    row_weight = 1.3  # 30% easier to select bottom rows
+            
+            # Apply weighted distance
+            weighted_distance = distance / row_weight
+            
+            # Update closest key if this one is closer
+            if weighted_distance < min_distance:
+                min_distance = weighted_distance
+                closest_key = key
+        
+        # Only return the key if it's within a reasonable distance
+        max_distance = 50  # Maximum distance to consider a key selection
+        if min_distance <= max_distance:
+            return closest_key
         
         return None
     
-    def can_type_key(self,key):
+    def can_type_key(self, key):
         """Check if key can be typed"""
-        current_time=time.time()
-
-        if key==self.last_typed_key:
-            if current_time - self.last_typed_time<self.same_key_cooldown:
+        current_time = time.time()
+        
+        if key == self.last_typed_key:
+            if current_time - self.last_typed_time < self.same_key_cooldown:
                 return False
-            
+        
         return True
     
-    def handle_special_keys(self,key):
+    def handle_special_keys(self, key):
         """Handle special control keys"""
-        if key=='POINT':
-            self.current_input_mode='point_only'
+        if key == 'POINT':
+            self.current_input_mode = 'point_only'
             self.mode_var.set('point_only')
-            self.overlay_dirty=True
+            self.overlay_dirty = True
             self.mode_status.config(text=f"Mode: {self.current_input_mode}")
             return True
-        elif key=='PINCH':
-            self.current_input_mode='pinch_only'
+        elif key == 'PINCH':
+            self.current_input_mode = 'pinch_only'
             self.mode_var.set('pinch_only')
-            self.overlay_dirty=True
+            self.overlay_dirty = True
             self.mode_status.config(text=f"Mode: {self.current_input_mode}")
             return True
-        elif key=="BOTH":
-            self.current_input_mode='both'
+        elif key == 'BOTH':
+            self.current_input_mode = 'both'
             self.mode_var.set('both')
-            self.overlay_dirty=True
+            self.overlay_dirty = True
             self.mode_status.config(text=f"Mode: {self.current_input_mode}")
             return True
-        elif key =='QUIT':
-            self.running=False
+        elif key == 'QUIT':
+            self.running = False
             return True
-
+        
         return False
-    def type_key(self,key,hand_label=""):
+    
+    def type_key(self, key, hand_label=""):
         """Type a key with hand identification"""
-        # Handle sepcial keys first
+        # Handle special keys first
         if self.handle_special_keys(key):
             return True
         
@@ -735,142 +745,151 @@ KEYBOARD SHORTCUTS:
             return False
         
         try:
-            if key =='SPACE':
+            if key == 'SPACE':
                 self.keyboard.press(Key.space)
                 self.keyboard.release(Key.space)
-            elif key=='BACKSPACE':
-                self.keyboard.press(key.backspace)
-                self.keyboard.release(key.backspace)
-            elif key=='ENTER':
-                self.keyboard.press(key.enter)
-                self.keyboard.release(key.enter)
-            elif key=='NUMBER':
-                self.current_layout="numbers"
-                self.overlay_dirty=True
+            elif key == 'BACKSPACE':
+                self.keyboard.press(Key.backspace)
+                self.keyboard.release(Key.backspace)
+            elif key == 'ENTER':
+                self.keyboard.press(Key.enter)
+                self.keyboard.release(Key.enter)
+            elif key == 'NUMBERS':
+                self.current_layout = "numbers"
+                self.overlay_dirty = True
                 return True
-            elif key =='LETTERS':
-                self.current_layout="letters"
-                self.overlay_dirty=True
+            elif key == 'LETTERS':
+                self.current_layout = "letters"
+                self.overlay_dirty = True
                 return True
             else:
                 self.keyboard.type(key.lower())
-
-            #Update last typed key info
-            self.last_typed_key=key
-            self.last_typed_time=time.time()
-
+            
+            # Update last typed key info
+            self.last_typed_key = key
+            self.last_typed_time = time.time()
+            
             print(f"Typed: {key} (by {hand_label} hand)")
             return True
-        
+            
         except Exception as e:
             print(f"Error typing key {key}: {e}")
             return False
-    def draw_multi_hand_indicators(self,frame,hand_data):
+    
+    def draw_multi_hand_indicators(self, frame, hand_data):
         """Draw indicators for both hands"""
-        # Draw indicators for hands that were recently detected but might be temorarliy lost
-        for hand_label in ["left","right"]:
+        # Draw indicators for hands that were recently detected but might be temporarily lost
+        for hand_label in ["left", "right"]:
             if self.hand_states[hand_label]["pointing_pos"] and self.hand_states[hand_label]["selected_key"]:
-                pointing_pos=self.hand_states[hand_label]["pointing_pos"]
-                if hand_label=="left":
-                    color=(255,0,0)
-                    text_color=(255,100,100)
+                pointing_pos = self.hand_states[hand_label]["pointing_pos"]
+                if hand_label == "left":
+                    color = (255, 0, 0)  # Blue for left hand
+                    text_color = (255, 100, 100)
                 else:
-                    color=(0,0,255)
-                    text_color=(100,100,255)
-
-                #Draw a faded indicator for temporarily lost hands
-                cv2.circle(frame,pointing_pos,8,color,1)
-
+                    color = (0, 0, 255)  # Red for right hand
+                    text_color = (100, 100, 255)
+                
+                # Draw a faded indicator for temporarily lost hands
+                cv2.circle(frame, pointing_pos, 8, color, 1)  # Hollow circle
+        
         for hand_info in hand_data:
-            hand_label=hand_info["label"]
-            pointing_pos=hand_info["pointing_pos"]
-            gesture=hand_info["gesture"]
-
+            hand_label = hand_info["label"]
+            pointing_pos = hand_info["pointing_pos"]
+            gesture = hand_info["gesture"]
+            
             if not pointing_pos:
                 continue
-
-            #Choose colors bases on hand
-            if hand_label=="left":
-                color=(255,0,0)
-                text_color=(255,100,100)
+            
+            # Choose colors based on hand
+            if hand_label == "left":
+                color = (255, 0, 0)  # Blue for left hand
+                text_color = (255, 100, 100)
             else:
-                color=(0,0,255)
-                text_color=(100,100,255)
-
-            x,y=pointing_pos
-
-            #Draw pointing indicator
-            cv2.circle(frame,(x,y),8,color,-1)
-            cv2.circle(frame,(x,y),15,color,2)
-
-            #Draw hand label if enabled
+                color = (0, 0, 255)  # Red for right hand
+                text_color = (100, 100, 255)
+            
+            x, y = pointing_pos
+            
+            # Draw pointing indicator
+            cv2.circle(frame, (x, y), 8, color, -1)
+            cv2.circle(frame, (x, y), 15, color, 2)
+            
+            # Draw hand label if enabled
             if self.display_settings["show_hand_labels"]:
-                label_text=f"{hand_label.upper()}"
-                cv2.putText(frame,label_text,(x-20,y-25),cv2.FONT_HERSHEY_SIMPLEX,0.5,text_color,2)
-
-            #Draw selection progress for point mode
-            selected_key=self.hand_states[hand_label]["selected_key"]
-            if (gesture=="point" and selected_key and self.input_modes[self.current_input_mode]["point"]):
-                self.draw_selection_progress(frame,pointing_pos,hand_label)
-
-    def draw_selection_progress(self,frame,point,hand_label):
-        """Draw selection progress indicator for a sepcific hand"""
+                label_text = f"{hand_label.upper()}"
+                cv2.putText(frame, label_text, (x - 20, y - 25), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 2)
+            
+            # Draw selection progress for point mode
+            selected_key = self.hand_states[hand_label]["selected_key"]
+            if (gesture == "point" and selected_key and 
+                self.input_modes[self.current_input_mode]["point"]):
+                self.draw_selection_progress(frame, pointing_pos, hand_label)
+    
+    def draw_selection_progress(self, frame, point, hand_label):
+        """Draw selection progress indicator for a specific hand"""
         if not point:
             return
         
-        current_time=time.time()
-        start_time=self.hand_states[hand_label]["selection_start_time"]
-        elapsed=current_time-start_time
-        progress=min(elapsed/self.selection_duration,1.0)
-
-        x,y=point
-        radius=25
-
-        #CHoose color based on hand
-        if hand_label=="left":
-            progress_color=(255,0,0)
-        else:
-            progress_color=(0,0,255)
+        current_time = time.time()
+        start_time = self.hand_states[hand_label]["selection_start_time"]
+        elapsed = current_time - start_time
+        progress = min(elapsed / self.selection_duration, 1.0)
         
-        #Draw progress arc
-        angle=int(360*progress)
-        if angle>0:
-            axes=(radius,radius)
-            cv2.ellipse(frame,(x,y),axes,-90,0,angle,progress_color,4)
-
-        #Draw progress text
-        progress_text=f"{int(progress * 100)}"
-        text_size=cv2.getTextSize(progress_text,cv2.FONT_HERSHEY_SIMPLEX,0.5,2)[0]
-        text_x=x-text_size[0]//2
-        text_y=y-35
-        cv2.putText(frame,progress_text,(text_x,text_y),cv2.FONT_HERSHEY_SIMPLEX,progress_color,2)
+        x, y = point
+        radius = 25
+        
+        # Choose color based on hand
+        if hand_label == "left":
+            progress_color = (255, 0, 0)  # Blue
+        else:
+            progress_color = (0, 0, 255)  # Red
+        
+        # Draw progress arc
+        angle = int(360 * progress)
+        if angle > 0:
+            axes = (radius, radius)
+            cv2.ellipse(frame, (x, y), axes, -90, 0, angle, progress_color, 4)
+        
+        # Draw progress text
+        progress_text = f"{int(progress * 100)}%"
+        text_size = cv2.getTextSize(progress_text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)[0]
+        text_x = x - text_size[0] // 2
+        text_y = y - 35
+        cv2.putText(frame, progress_text, (text_x, text_y), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, progress_color, 2)
     
-    def draw_status_info(self,frame):
+    def draw_status_info(self, frame):
         """Draw status information with multi-hand support"""
-        h,w=frame.shape[:2]
-
+        h, w = frame.shape[:2]
+        
         if not self.display_settings["show_camera"]:
             return
         
-        #Multi-hand status
-        left_gesture=self.hand_states["left"]["gesture"]
-        right_gesture=self.hand_states["right"]["gesture"]
-
-        cv2.putText(frame,f"Left Hand: {left_gesture}",(10,30),cv2.FONT_HERSHEY_SIMPLEX,0.7,(255,0,0),2)
-        cv2.putText(frame,f"Right Hand: {right_gesture}",(10,60),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,0,255),2)
-
-        #Selected keys
-        left_key=self.hand_states["left"]["selected_key"]
-        right_key=self.hand_states["right"]["selected_key"]
-
+        # Multi-hand status
+        left_gesture = self.hand_states["left"]["gesture"]
+        right_gesture = self.hand_states["right"]["gesture"]
+        
+        cv2.putText(frame, f"Left Hand: {left_gesture}", (10, 30), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        cv2.putText(frame, f"Right Hand: {right_gesture}", (10, 60), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        
+        # Selected keys
+        left_key = self.hand_states["left"]["selected_key"]
+        right_key = self.hand_states["right"]["selected_key"]
+        
         if left_key:
-            cv2.putText(frame,f"Left Selected: {left_key}",(10,90),cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,100,100),2)
+            cv2.putText(frame, f"Left Selected: {left_key}", (10, 90), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 100, 100), 2)
         if right_key:
-            cv2.putText(frame,f"Right Selected: {right_key}",(10,120),cv2.FONT_HERSHEY_SIMPLEX,0.6,(100,100,255),2)
-
-        #Input mode and Settings
-        cv2.putText(frame,f"Mode: {self.current_input_mode.upper()}",(10,150),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,255,255),2)
-
+            cv2.putText(frame, f"Right Selected: {right_key}", (10, 120), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.6, (100, 100, 255), 2)
+        
+        # Input mode and settings
+        cv2.putText(frame, f"Mode: {self.current_input_mode.upper()}", (10, 150), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+        
         multi_status = "ON" if self.multi_hand_settings["enabled"] else "OFF"
         cv2.putText(frame, f"Multi-Hand: {multi_status}", (10, 180), 
                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
@@ -878,126 +897,138 @@ KEYBOARD SHORTCUTS:
         bg_status = "ON" if self.display_settings["background_mode"] else "OFF"
         cv2.putText(frame, f"Background: {bg_status}", (10, 210), 
                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0) if self.display_settings["background_mode"] else (255, 0, 0), 2)
-
-        #help text
-        if self.show_help:
-            help_text=[
-                f"Hold Duration: {self.selection_duration}s",
-                "Blue = Left Hand,Red = Right Hand",
-                "Both hands can type simultaneously",
-                "Background mode for overlayoperation",
-                "Q: Quit, H: Toggle help,T: Toggle transparency"
-            ]
-
-            for i,text in enumerate(help_text):
-                cv2.putText(frame,"DEBUG MODE ON",(w-200,h-60),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,0,255),2)
-
-                #Show hand positions
-                left_pos=self.hand_states["left"]["pointing_pos"]
-                right_pos=self.hand_states["right"]["pointing_pos"]
-
-                if left_pos:
-                    cv2.putText(frame,f"Left pos: {left_pos}",(10,h-90),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,0,0),1)
-                
-                if right_pos:
-                    cv2.putText(frame,f"Right pos: {right_pos}",(10,h-60),cv2.FONT_HERSHEY_SIMPLEX,0.5,(0,0,255),1)
-
-                #Show key mapping info
-                if left_pos:
-                    left_key=self.map_point_to_key(left_pos)
-                    cv2.putText(frame,f"Left maps to: {left_key}",(10,h-30),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,0,0),1)
-
-                if right_pos:
-                    right_key=self.map_point_to_key(right_pos)
-                    cv2.putText(frame,f"Right maps to: {right_key}",(255,h-30),cv2.FONT_HERSHEY_SIMPLEX,0.5,(0,0,255),1)
-
-    def process_multi_hand_gestures(self,hand_data):
-        """Process gestures for multiple hands"""
-        current_time=time.time()
-        mode_settings=self.input_modes[self.current_input_mode]
-
-        #Update hand states for hands that are no longwe detected
-        current_hand_labels=[hand_info["label"] for hand_info in hand_data]
-        for hand_label in ["left","right"]:
-            if hand_label not in current_hand_labels:
-                #Hand is not currently detected,update its state
-                self.hand_states[hand_label]["gesture"]="none"
-                #Don't clear pointing position or selection immediately to prevernt flickering
-                #Only clear if it's been gone for a while
-                if self.hand_states[hand_label]["selected_key"] and current_time - self.hand_states[hand_label]["selection_start_time"]>3.0:
-                    self.hand_states[hand_label]["selected_key"]=None
-                    self.overlay_dirty=True
         
-        #Process each hand
+        # Help text
+        if self.show_help:
+            help_text = [
+                f"Hold Duration: {self.selection_duration}s",
+                "Blue = Left Hand, Red = Right Hand",
+                "Both hands can type simultaneously",
+                "Background mode for overlay operation",
+                "Q: Quit, H: Toggle help, T: Toggle transparency"
+            ]
+            #Here 6/10/2025
+            for i, text in enumerate(help_text):
+                cv2.putText(frame, text, (w - 450, 30 + i * 25), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+
+        # Debug information
+        if self.debug_mode:
+            # Show detailed hand tracking info
+            cv2.putText(frame, "DEBUG MODE ON", (w - 200, h - 60), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            
+            # Show hand positions
+            left_pos = self.hand_states["left"]["pointing_pos"]
+            right_pos = self.hand_states["right"]["pointing_pos"]
+            
+            if left_pos:
+                cv2.putText(frame, f"Left pos: {left_pos}", (10, h - 90), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+            
+            if right_pos:
+                cv2.putText(frame, f"Right pos: {right_pos}", (10, h - 60), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+            
+            # Show key mapping info
+            if left_pos:
+                left_key = self.map_point_to_key(left_pos)
+                cv2.putText(frame, f"Left maps to: {left_key}", (10, h - 30), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+            
+            if right_pos:
+                right_key = self.map_point_to_key(right_pos)
+                cv2.putText(frame, f"Right maps to: {right_key}", (250, h - 30), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+    
+    def process_multi_hand_gestures(self, hand_data):
+        """Process gestures for multiple hands"""
+        current_time = time.time()
+        mode_settings = self.input_modes[self.current_input_mode]
+        
+        # Update hand states for hands that are no longer detected
+        current_hand_labels = [hand_info["label"] for hand_info in hand_data]
+        for hand_label in ["left", "right"]:
+            if hand_label not in current_hand_labels:
+                # Hand is not currently detected, update its state
+                self.hand_states[hand_label]["gesture"] = "none"
+                # Don't clear pointing position or selection immediately to prevent flickering
+                # Only clear if it's been gone for a while
+                if self.hand_states[hand_label]["selected_key"] and current_time - self.hand_states[hand_label]["selection_start_time"] > 3.0:
+                    self.hand_states[hand_label]["selected_key"] = None
+                    self.overlay_dirty = True
+        
+        # Process each hand
         for hand_info in hand_data:
             hand_label = hand_info["label"]
-            gesture=hand_info["gesture"]
+            gesture = hand_info["gesture"]
             pointing_pos = hand_info["pointing_pos"]
-
-            #Skip if hand is disabled by priority settings
-            priority=self.multi_hand_settings["hand_priority"]
+            
+            # Skip if hand is disabled by priority settings
+            priority = self.multi_hand_settings["hand_priority"]
             if priority != "both" and priority != hand_label:
                 continue
-
-            #update hand state
-            self.hand_states[hand_label]["gesture"]=gesture
-            self.hand_states[hand_label]["pointing_pos"]=pointing_pos
-
-            #Process point gesture
-            if gesture =="point" and pointing_pos and mode_settings["point"]:
-                key =self.map_point_to_key(pointing_pos)
-
-                if key and key !=self.hand_states[hand_label]["selected_key"]:
-                    #New key selected
-                    self.hand_states[hand_label]["selected_key"]=key
-                    self.hand_states[hand_label]["selection_start_time"]=current_time
-                    self.overlay_dirty=True
-
-                elif key==self.hand_states[hand_label]["selected_key"]:
-                    #Continue selecting same key
-                    start_time=self.hand_states[hand_label]["selection_start_time"]
-                    elapsed=current_time-start_time
-
-                    if elapsed >= self.selection_duration:
-                        #Type the key
-                        if self.type_key(key,hand_label):
-                            self.hand_states[hand_label]["selected_key"]=None
-                            self.overlay_dirty=True
+            
+            # Update hand state
+            self.hand_states[hand_label]["gesture"] = gesture
+            self.hand_states[hand_label]["pointing_pos"] = pointing_pos
+            
+            # Process point gesture
+            if gesture == "point" and pointing_pos and mode_settings["point"]:
+                key = self.map_point_to_key(pointing_pos)
                 
-            #process pinch gesture
+                if key and key != self.hand_states[hand_label]["selected_key"]:
+                    # New key selected
+                    self.hand_states[hand_label]["selected_key"] = key
+                    self.hand_states[hand_label]["selection_start_time"] = current_time
+                    self.overlay_dirty = True
+                    
+                elif key == self.hand_states[hand_label]["selected_key"]:
+                    # Continue selecting same key
+                    start_time = self.hand_states[hand_label]["selection_start_time"]
+                    elapsed = current_time - start_time
+                    
+                    if elapsed >= self.selection_duration:
+                        # Type the key
+                        if self.type_key(key, hand_label):
+                            self.hand_states[hand_label]["selected_key"] = None
+                            self.overlay_dirty = True
+            
+            # Process pinch gesture
             elif gesture == "pinch" and pointing_pos and mode_settings["pinch"]:
-                key=self.map_point_to_key(pointing_pos)
+                key = self.map_point_to_key(pointing_pos)
                 if key:
-                    if self.type_key(key,hand_label):
-                        self.hand_states[hand_label]["selected_key"]=None
-                        self.overlay_dirty=True
+                    if self.type_key(key, hand_label):
+                        self.hand_states[hand_label]["selected_key"] = None
+                        self.overlay_dirty = True
             
-            #Process fist gesture
-            elif gesture == f"fist":
+            # Process fist gesture
+            elif gesture == "fist":
                 if self.hand_states[hand_label]["selected_key"]:
-                    self.hand_states[hand_label]["selected_key"]=None
-                    self.overlay_dirty=True
+                    self.hand_states[hand_label]["selected_key"] = None
+                    self.overlay_dirty = True
             
-            #Clear selection if not gesture for while
+            # Clear selection if no gesture for a while
             elif gesture == "none":
-                if (self.hand_states[hand_label]["selected_key"] and current_time-self.hand_states[hand_label]["selection_start_time"]>3.0):
-                    self.hand_states[hand_label]["selected_key"]=None
-                    self.overlay_dirty=True
+                if (self.hand_states[hand_label]["selected_key"] and 
+                    current_time - self.hand_states[hand_label]["selection_start_time"] > 3.0):
+                    self.hand_states[hand_label]["selected_key"] = None
+                    self.overlay_dirty = True
     
     def run(self):
-        """Main application loop with multi-hand overlay suppeort"""
-        print("Starting Multi-hand Overlay Gesture Keyboard...")
+        """Main application loop with multi-hand overlay support"""
+        print("Starting Multi-Hand Overlay Gesture Keyboard...")
         print(f"Multi-hand tracking: {self.multi_hand_settings['enabled']}")
         print(f"Current input mode: {self.current_input_mode}")
         print("Use the control window to change settings!")
-
-        #Create camera window with transparency support
-        cv2.namedWindow('Multi-Hand Gesture Keyboard Overlay',cv2.WINDOW_NORMAL)
-
-        #set initial window properties
-        cv2.setWindowProperty('Multi-hand Gesture Keyboard Overlay',cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_NORMAL)
-
-        #Enable transparency (platform-specific)
+        
+        # Create camera window with transparency support
+        cv2.namedWindow('Multi-Hand Gesture Keyboard Overlay', cv2.WINDOW_NORMAL)
+        
+        # Set initial window properties
+        cv2.setWindowProperty('Multi-Hand Gesture Keyboard Overlay', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
+        
+        # Enable transparency (platform-specific)
         try:
             # For Windows
             import ctypes
@@ -1005,49 +1036,49 @@ KEYBOARD SHORTCUTS:
             style = ctypes.windll.user32.GetWindowLongA(hwnd, -20)  # GWL_EXSTYLE
             ctypes.windll.user32.SetWindowLongA(hwnd, -20, style | 0x00080000)  # WS_EX_LAYERED
             # Set initial transparency
-            ctypes.windll.user32.SetLayerWindowAttributes(hwnd,0,int(255*self.display_settings["window_transparency"]),2)# LWA_ALPHA
+            ctypes.windll.user32.SetLayeredWindowAttributes(hwnd, 0, int(255 * self.display_settings["window_transparency"]), 2)  # LWA_ALPHA
         except Exception as e:
             print(f"Window transparency might not be fully supported on this platform: {e}")
             print("Using alternative transparency method...")
-
+        #here 7/10/2025 4:51
         while self.running:
-            ret,feame =self.cap.read()
+            ret, frame = self.cap.read()
             if not ret:
                 continue
-
-            #Flip frame for mirror effect
-            frame=cv2.flip(frame,1)
-            h,w=frame.shape[:2]
-
-            #Create a transparent base frame for background mode
+            
+            # Flip frame for mirror effect
+            frame = cv2.flip(frame, 1)
+            h, w = frame.shape[:2]
+            
+            # Create a transparent base frame for background mode
             if self.display_settings["background_mode"]:
-                #Create transparent background
-                display_frame=np.zeros((h,w,4),dtype=np.uint8) # RGBA
-                display_frame[:,:,3]=int(255 * self.display_settings["window_transparency"])#Alpha channel
+                # Create transparent background
+                display_frame = np.zeros((h, w, 4), dtype=np.uint8)  # RGBA
+                display_frame[:, :, 3] = int(255 * self.display_settings["window_transparency"])  # Alpha channel
             else:
-                #Use camera feed with adjusted transparency
-                display_frame=frame.copy()
-
-            #Process hand detection
-            rgb_frame=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
-            results=self.hands.process(rgb_frame)
-
-            hand_data=[]
-
+                # Use camera feed with adjusted transparency
+                display_frame = frame.copy()
+            
+            # Process hand detection
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = self.hands.process(rgb_frame)
+            
+            hand_data = []
+            
             if results.multi_hand_landmarks and results.multi_handedness:
-                for hand_landmarks,handedness in zip(results.multi_hand_landmarks,results.multi_handedness):
-                    #Determine hand label
-                    hand_label=self.determine_hand_label(hand_landmarks,handedness)
-
-                    #Draw haand landmarks if camera is visible
+                for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
+                    # Determine hand label
+                    hand_label = self.determine_hand_label(hand_landmarks, handedness)
+                    
+                    # Draw hand landmarks if camera is visible
                     if self.display_settings["show_camera"]:
-                        #Use different color for different hands
-                        if hand_label =="left":
-                            landmark_color=(255,0,0)
-                            connection_color=(200,0,0)
+                        # Use different colors for different hands
+                        if hand_label == "left":
+                            landmark_color = (255, 0, 0)  # Blue for left
+                            connection_color = (200, 0, 0)
                         else:
-                            landmark_color=(0,0,255)
-                            connection_color=(0,0,200)
+                            landmark_color = (0, 0, 255)  # Red for right
+                            connection_color = (0, 0, 200)
                         
                         self.mp_draw.draw_landmarks(
                             display_frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS,
@@ -1056,103 +1087,142 @@ KEYBOARD SHORTCUTS:
                             connection_drawing_spec=mp.solutions.drawing_utils.DrawingSpec(
                                 color=connection_color, thickness=1)
                         )
-
+                    
                     # Detect gesture and pointing position
-                    gesture=self.detect_hand_gesture(hand_landmarks.landmark)
-                    pointing_pos=self.get_hand_pointing_position(hand_landmarks.landmark,frame.shape)
-
+                    gesture = self.detect_hand_gesture(hand_landmarks.landmark)
+                    pointing_pos = self.get_hand_pointing_position(hand_landmarks.landmark, frame.shape)
+                    
                     hand_data.append({
-                        "label":hand_label,
-                        "gesture":gesture,
-                        "pointing_pos":pointing_pos,
-                        "landmaeks":hand_landmarks
+                        "label": hand_label,
+                        "gesture": gesture,
+                        "pointing_pos": pointing_pos,
+                        "landmarks": hand_landmarks
                     })
             
             # Update status labels
-            left_gesture="none"
-            right_gesture="none"
-
+            left_gesture = "none"
+            right_gesture = "none"
+            
             for hand_info in hand_data:
-                if hand_info["label"]=="left":
-                    left_gesture=hand_info["gesture"]
-                elif hand_info["label"]=="right":
-                    right_gesture=hand_info["gesture"]
+                if hand_info["label"] == "left":
+                    left_gesture = hand_info["gesture"]
+                elif hand_info["label"] == "right":
+                    right_gesture = hand_info["gesture"]
             
             self.left_hand_status.config(text=f"Left Hand: {left_gesture}")
             self.right_hand_status.config(text=f"Right Hand: {right_gesture}")
-
-            #Process multi-hand gestures
+            
+            # Process multi-hand gestures
             if self.multi_hand_settings["enabled"]:
                 self.process_multi_hand_gestures(hand_data)
             else:
-                #Single hand mode - use first deteceted hand
+                # Single hand mode - use first detected hand
                 if hand_data:
                     self.process_multi_hand_gestures([hand_data[0]])
-
-            #Create or update overlay if needed
-            if self.overlay_dirty or self.overlay_cache is None:
-                self.overlay_cache=self.create_fullscreen_overlay(frame.shape)
-                self.overlay_dirty=False
             
-            #Handle display modes
+            # Create or update overlay if needed
+            if self.overlay_dirty or self.overlay_cache is None:
+                self.overlay_cache = self.create_fullscreen_overlay(frame.shape)
+                self.overlay_dirty = False
+            
+            # Handle display modes
             if self.display_settings["background_mode"]:
-                # Background mode -show only keyboard overlay with transparency
+                # Background mode - show only keyboard overlay with transparency
                 if not self.display_settings["show_camera"]:
-                    #Create a semi-teansparent black background
-                    bg=np.zeros_like(frame)
-                    #Belnd overlay with transparent bachground
-                    alpha=self.display_settings["window_alpha"]
-                    display_frame=cv2.addWeighted(bg,1-alpha,self.overlay_cache,alpha,0)
+                    # Create a semi-transparent black background
+                    bg = np.zeros_like(frame)
+                    # Blend overlay with transparent background
+                    alpha = self.display_settings["window_alpha"]
+                    display_frame = cv2.addWeighted(bg, 1-alpha, self.overlay_cache, alpha, 0)
                 else:
-                    #Blend camera with overlay
-                    alpha =self.display_settings["window_alpha"]
-                    display_frame=cv2.addWeighted(display_frame,1-alpha,self.overlay_cache,alpha,0)
+                    # Blend camera with overlay
+                    alpha = self.display_settings["window_alpha"]
+                    display_frame = cv2.addWeighted(display_frame, 1-alpha, self.overlay_cache, alpha, 0)
             else:
-                #Normal mode - blend overlay with camera
+                # Normal mode - blend overlay with camera
                 if self.display_settings["show_camera"]:
-                    display_frame=frame.copy()
+                    display_frame = frame.copy()
                 else:
-                    #Show only overlay without camrea
-                    display_frame=np.zeros_like(frame)
+                    # Show only overlay without camera
+                    display_frame = np.zeros_like(frame)
                 
                 if self.keyboard_visible:
-                    alpha =self.display_settings["window_alpha"]
-                    display_frame=cv2.addWeighted(display_frame,1-alpha,self.overlay_cache,alpha,0)
+                    alpha = self.display_settings["window_alpha"]
+                    display_frame = cv2.addWeighted(display_frame, 1-alpha, self.overlay_cache, alpha, 0)
             
-            #Draw multi-hand indicators
+            # Draw multi-hand indicators
             if hand_data:
-                self.draw_multi_hand_indicators(display_frame,hand_data)
-
-            #Draw status information
+                self.draw_multi_hand_indicators(display_frame, hand_data)
+            
+            # Draw status information
             self.draw_status_info(display_frame)
-
-            #Show frame
-            cv2.imshow('Multi-Hand Gesture Keyboard Overlay',display_frame)
-
-            #Set window properties
+            
+            # Show frame
+            cv2.imshow('Multi-Hand Gesture Keyboard Overlay', display_frame)
+            
+            # Set window properties
             if self.display_settings["always_on_top"]:
-                cv2.setWindowProperty('Multi-Hand Gesture Keyboard Overlay',cv2.WND_PROP_TOPMOST,1)
+                cv2.setWindowProperty('Multi-Hand Gesture Keyboard Overlay', cv2.WND_PROP_TOPMOST, 1)
+            
+            # Update window transparency (platform-specific)
+            try:
+                # For Windows
+                import ctypes
+                hwnd = ctypes.windll.user32.FindWindowW(None, 'Multi-Hand Gesture Keyboard Overlay')
+                if hwnd:
+                    ctypes.windll.user32.SetLayeredWindowAttributes(
+                        hwnd, 0, int(255 * self.display_settings["window_transparency"]), 2)  # LWA_ALPHA
+            except:
+                pass  # Silently fail if not supported
+            
+            # Handle key presses
+            key_pressed = cv2.waitKey(1) & 0xFF
+            if key_pressed == ord('q'):
+                break
+            elif key_pressed == ord('h'):
+                self.show_help = not self.show_help
+            elif key_pressed == ord('k'):
+                self.keyboard_visible = not self.keyboard_visible
+            elif key_pressed == ord('t'):
+                # Toggle transparency with hotkey
+                new_transparency = 0.3 if self.display_settings["window_transparency"] > 0.5 else 0.8
+                self.display_settings["window_transparency"] = new_transparency
+                self.window_transparency_var.set(new_transparency)#here 8/10/2025
+            elif key_pressed == ord('r'):
+                self.recalibrate_hand_tracking()
+            elif key_pressed == ord('b'):
+                # Toggle background mode
+                self.display_settings["background_mode"] = not self.display_settings["background_mode"]
+                self.bg_mode_var.set(self.display_settings["background_mode"])
+                print(f"Background mode: {self.display_settings['background_mode']}")
+            elif key_pressed == ord('c'):
+                # Toggle camera display
+                self.display_settings["show_camera"] = not self.display_settings["show_camera"]
+                self.show_camera_var.set(self.display_settings["show_camera"])
+                print(f"Show camera: {self.display_settings['show_camera']}")
+            elif key_pressed == ord('m'):
+                # Toggle multi-hand mode
+                self.multi_hand_settings["enabled"] = not self.multi_hand_settings["enabled"]
+                self.multi_hand_var.set(self.multi_hand_settings["enabled"])
+                self.toggle_multi_hand()
+            elif key_pressed == ord('d'):
+                # Toggle debug mode
+                self.debug_mode = not self.debug_mode
+                print(f"Debug mode: {self.debug_mode}")
+        
+        # Cleanup
+        self.save_settings()
+        self.cap.release()
+        cv2.destroyAllWindows()
 
-                #Update window transparency (platform-specific)
-                try:
-                    # For Windows
-                    import ctypes
-                    hwnd=ctypes.windll.user32.FindWindowW(None,'Multi-hand Gesture Keyboard Overlay')
-                    if hwnd:
-                        ctypes.windll.user32.SetLayeredWindowAttributes(hwnd,0,int(255 * self.display_settings["window_transparency"]),2)
-                except:
-                    pass
+def main():
+    try:
+        keyboard = MultiHandOverlayKeyboard()
+        keyboard.run()
+    except Exception as e:
+        print(f"Error: {e}")
+        print("Make sure you have the required packages installed:")
+        print("pip install opencv-python mediapipe pynput")
 
-                # Handle key presses
-                key_pressed=cv2.waitKey(1) & 0xFF
-                if key_pressed == ord('q'):
-                    break
-                elif key_pressed ==ord('h'):
-                    self.show_help=not self.show_help
-                elif key_pressed == ord('k'):
-                    self.keyboard_visible =not self.keyboard_visible
-                elif key_pressed == ord('t'):
-                    #Toggle transparency with hotkey
-                    new_transparency=0.3 if self.display_settings["window_transparency"]>0.5 else 0.8
-                    self.display_settings["window_transparency"]=new_transparency
-                    self.window_transparency_var.set(new_transparency)
+if __name__ == "__main__":
+    main()
