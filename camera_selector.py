@@ -137,4 +137,164 @@ class CameraSelector:
         cancel_btn.pack(side=tk.LEFT,padx=10)
 
         #Bind selection change
+        self.camera_tree.bind('<<TreeviewSelect>>',self.on_camera_select)
+
+        #Handle window closing
+        self.selected_window.protocol("WM_DELETE_WINDOW",self.cancel_selection)
+
+        #Center the window
+        self.selected_window.update_idletasks()
+        width=self.selected_window.winfo_width()
+        height=self.selected_window.winfo_height()
+        x=(self.selected_window.winfo_screenmmwidth()//2)-(width//2)
+        y=(self.selected_window.winfo_screenheight()//2)-(height//2)
+        self.selected_window.geometry(f'{width}x{height}+{x}+{y}')
+
+        # Wait for selection
+        self.selected_window.wait_window()
+
+        return self.selected_camera
+    def on_camera_select(self,event):
+        """Handle camera selection change"""
+        selection=self.camera_tree.selection()
+        if selection:
+            item=self.camera_tree.item(selection[0])
+            camera_name=item['values'][0]
+            # Find camera index by name
+            for camera in self.available_cameras:
+                if camera['name']==camera_name:
+                    self.selected_camera=camera['index']
+                    break
+    
+    def refresh_cameras(self):
+        """Refresh the camera list"""
+        # Stop preview if running
+        if self.preview_running:
+            self.toggle_preview()
+
+        # Clear existing items
+        for item in self.camera_tree.get_children():
+            self.camera_tree.delete(item)
+
+        # Detect cameras again
+        self.detect_cameras()
+
+        # Add cameras to the tree
+        for camera in self.available_cameras:
+            self.camera_tree.insert(',"end',values=(
+                camera['name'],
+                camera['resolution'],
+                camera['fps'],
+                camera['backend']
+            ))
+
+        # Select first camera by default
+        if self.available_cameras:
+            self.camera_tree.selection_set(self.camera_tree.get_children()[0])
+            self.selected_camera=self.available_cameras[0]['index']
+    
+    def toggle_preview(self):
+        """Toggle camera preview"""
+        if self.preview_running:
+            self.stop_preview()
+        else:
+            self.start_preview()
+    
+    def start_preview(self):
+        """Start camera preview"""
+        if self.preview_running:
+            return
         
+        self.preview_running=True
+        self.preview_btn.config(text="Stop preview")
+
+        # Start preview in separate thread
+        self.preview_thread=threading.Thread(target=self.preview_loop,daemon=True)
+        self.preview_thread.start()
+
+    def stop_preview(self):
+        """Stop camera preview"""
+        self.preview_running=False
+        self.preview_btn.config(text="Preview Selected Camera")
+
+        if self.preview_cap:
+            self.preview_cap.release()
+            self.preview_cap=None
+        
+        cv2.destroyAllWindows()
+
+    def preview_loop(self):
+        """Camera preview loop"""
+        self.preview_cap=cv2.VideoCapture(self.selected_camera)
+
+        if not self.preview_cap.isOpened():
+            messagebox.showerror("Error",f"Cannot open camera {self.selected_camera}")
+            self.preview_running=False
+            self.preview_btn.config(text="Preview Selected Camera")
+            return
+
+        window_name=f"Camera {self.selected_camera} Preview - Press 'q' to close"
+        cv2.namedWindow(window_name,cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(window_name,640,480)
+
+        while self.preview_running:
+            ret,frame =self.preview_cap.read()
+            if not ret:
+                break
+
+            # Add preview text
+            cv2.putText(frame,f"Camera {self.selected_camera} Preview",(10,30),cv2.FONT_HERSHEY_SIMPLEX,1,(0,255,0),2)
+            cv2.putText(frame,"Press 'q' to close preview",(10,60),cv2.FONT_HERSHEY_SIMPLEX,0.7,(255,255,255),2)
+            
+            cv2.imshow(window_name,frame)
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+        
+        self.preview_cap.release()
+        cv2.destroyWindow(window_name)
+        self.preview_running=False
+
+        # Update button text on main thread
+        try:
+            self.preview_btn.config(text="Preview Selected Camera")
+        except:
+            pass #Window might be closed
+
+    def select_camera(self,callback):
+        """Select the camera and close dialog"""
+        # Stop preview if running
+        if self.preview_running:
+            self.stop_preview()
+
+        if callback:
+            callback(self.selected_camera)
+
+        self.selector_window.destroy()
+
+    def cancel_selection(self):
+        """Cancel camera selection"""
+        # Stop preview if running
+        if self.preview_running:
+            self.stop_preview()
+
+        self.selected_camera=None
+        self.selected_window.destroy()
+def show_camera_selector():
+    """Standalong function to show camera selector"""
+    root=tk.Tk()
+    root.withdraw()
+
+    selector=CameraSelector()
+    selected_camera=selector.show_camera_selector()
+
+    root.destroy()
+    return selected_camera
+
+if __name__=="__main__":
+    #Test the camera selector
+    selected = show_camera_selector()
+    if selected is not None:
+        print(f"Selected camera: {selected}")
+    else:
+        print("No camera selected")
