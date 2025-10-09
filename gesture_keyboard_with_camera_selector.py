@@ -558,4 +558,160 @@ class MultihandOverlayKeyboardWithCamera:
             cv2.putText(overlay,multi_hand_text,(20,60),cv2.FONT_HERSHEY_SIMPLEX,0.7,(255,255,0),2)
             cv2.putText(overlay,duration_text,(20,90),cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,255,0),2)
             cv2.putText(overlay,bg_mode_text,(20,120),cv2.FONT_HERSHEY_SIMPLEX,0.6,(0,255,0) if self.display_settings['background_mode'] else (255,0,0),2)
+
+            # Camera info
+            if self.display_settings["camera_info_display"]:
+                camera_text=f"Camera: {self.selected_camera_index}"
+                camera_status="ACTIVE" if self.camera_ready else "STOPPED"
+                status_color=(0,255,0) if self.camera_ready else(0,0,255)
+
+                cv2.putText(overlay,camera_text,(20,150),cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,255,0),2)
+                cv2.putText(overlay,f"Status: {camera_status}",(200,150),cv2.FONT_HERSHEY_SIMPLEX,0.6,status_color,2)
+
+            # Add help text for camera
+            cv2.putText(overlay,"Press 'C' to change camera",(w-300,h-30),cv2.FONT_HERSHEY_SIMPLEX,0.6,(200,200,200),2)
+
+        return overlay
+    
+    def map_point_to_key(self,point):
+        """Map screen point to keyboard key with improved accuracy"""
+        if not point or not hasattr(self,'key_positions'):
+            return None
+        
+        x,y=point
+
+        # Find the closest key to the pointing position
+        closest_key=None
+        min_distance=float('inf')
+
+        for key,pos in self.key_positions.items():
+            # Calculate center of key
+            key_center_x=pos['x']+pos['width']/2
+            key_center_y=pos['y']+pos['height']/2
+
+            # Calculate distance to key center
+            distance =math.sqrt((x-key_center_x)**2+(y-key_center_y)**2)
+
+            # Apply row-based weighting(give more weight to bottom rows)
+            row_weight=1.0
+            if 'row' in pos:
+                # Bottom rows get more weight(easier to select)
+                if pos['row']>=len(self.keyboard_layouts[self.current_layout])-2:
+                    row_weight=1.3
+
+            # Apply weighted distance
+            weighted_distance =distance/row_weight
+
+            # Update closest key if this one is closer
+            if weighted_distance <min_distance:
+                min_distance=weighted_distance
+                closest_key
+
+        #Only return the key if it's within a reasonable distance
+        max_distance=50# Maximum distance to consider a key selection
+        if min_distance<=max_distance:
+            return closest_key
+        
+        return None
+    
+    def can_type_key(self,key):
+        """Check if key can be typed"""
+        current_time =time.time()
+
+        if key == self.last_typed_key:
+            if current_time-self.last_typed_time<self.same_key_cooldown:
+                return False
+        
+        return True
+    
+    def handle_spacial_keys(self,key):
+        """Handle special control keys"""
+        if key=='POINT':
+            self.current_input_mode='point_only'
+            self.mode_var.set('point_only')
+            self.overlay_dirty=True
+            self.mode_status.config(text=f"Mode: {self.current_input_mode}")
+            return True
+        elif key=='PINCH':
+            self.current_input_mode='pinch_only'
+            self.mode_var.set('pinch_only')
+            self.overlay_dirty=True
+            self.mode_status.config(text=f"Mode: {self.current_input_mode}")
+            return True
+        elif key=='BOTH':
+            self.current_input_mode='both'
+            self.mode_var.set('both')
+            self.overlay_dirty=True
+            self.mode_status.config(text=f"mode: {self.current_input_mode}")
+            return True
+        elif key == 'CAMERA':
+            self.show_camera_selector()
+            return True
+        
+        return False
+    
+    def type_key(self,key,hand_label=""):
+        """Type a key with hand identification"""
+        # Handle special keys first
+        if self.handle_special_keys(key):
+            return True
+
+        if not self.can_type_key(key):
+            return False
+        
+        try:
+            if key == 'SPACE':
+                self.keyboard.press(Key.space)
+                self.keyboard.release(Key.space)
+            elif key == 'BACKSPACE':
+                self.keyboard.press(Key.backspace)
+                self.keyboard.release(Key.backspace)
+            elif key == 'ENTER':
+                self.keyboard.press(Key.enter)
+                self.keyboard.release(Key.enter)
+            elif key == 'NUMBERS':
+                self.current_layout = "numbers"
+                self.overlay_dirty= True
+                return True
+            elif key=='LETTERS':
+                self.current_layout = "letters"
+                self.overlay_dirty=True
+                return True
+            else:
+                self.keyboard.type(key.lower())
             
+            # Update last typed key info
+            self.last_Tuped_key=key
+            self.last_typed_time=time.time()
+
+            print(f"Typed: {key} (by {hand_label} hand)")
+            return True
+        
+        except Exception as e:
+            print(f"Error typing key {key}: {e}")
+            return False
+    def draw_multi_hand_indicators(self,frame,hand_date):
+        """Draw indicators for both hands"""
+        for hand_info in hand_date:
+            hand_label=hand_info["label"]
+            pointing_pos=hand_info["pointing_pos"]
+            gesture=hand_info["gesture"]
+
+            if not pointing_pos:
+                continue
+
+            # Choose colors based on hand
+            if hand_label == "left":
+                color =(255,0,0) # Blue for left hand
+                text_color=(255,100,100)
+            else:
+                color=(0,0,255) # Red for right hand
+                text_color =(100,100,255)
+            
+            x,y=pointing_pos
+
+            # Draw pointing indicator
+            cv2.circle(frame,(x,y),8,color,-1)
+            cv2.circle(frame,(x,y),15,color,2)
+
+            # Draw hand label if enabled
