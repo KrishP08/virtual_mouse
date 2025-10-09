@@ -304,4 +304,126 @@ class MultihandOverlayKeyboardWithCamera:
         else:
             self.stop_camera()
 
+    def start_camera(self):
+        """Start camera and gesture detection"""
+        try:# Initialize camera
+            self.cap=cv2.VideoCapture(self.selevted_camera_index)
+
+            if not self.cap.isOpened():
+                messagebox.showerror("Error",f"Cannot open camera {self.selected_camera_index}")
+                return
+            
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,1280)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT,720)
+            self.cap.set(cv2.CAP_PROP_FPS,30)
+
+            #Start camera proceessing
+            self.running=True
+            self.camera_ready=True
+
+            # Update UI
+            self.status_label.config(text="camera Running",fg='#00ff00')
+            self.camera_control_btn.config(text="Stop Camera",bg='#cc0000')
+
+            print(f"Multi-hand camera {self.selected_camera_index} started successfully")
+
+        except Exception as e:
+            messagebox.showerror("Error",f"Failed to strat camera: {e}")
+            self.camera_ready=False
+    
+    def stop_camera(self):
+        """Stop camera and gesture setection"""
+        self.running=False
+        self.camera_ready=False
+
+        if self.cap:
+            self.cap.release()
+            self.cap=None
+
+        cv2.destroyAllWindows()
+
+        # Update UI
+        self.status_label.config(text="Camera Stopprd",fg='#ffff00')
+        self.camera_control_btn.confog(text="Start Camera",bg='#006600')
+
+        print(f"Multi-Hand tracking: {self.multi_hand_settings['enabled']}")
+    
+    def toggle_simultaneous_typing(self):
+        """Toggle simultaneous typing"""
+        self.multi_hand_settings["simultaneous_typing"] = self.simultaneous_var.get()
+        print(f"Simultaneous typing: {self.multi_hand_settings['simultaneous_typing']}")
+
+    def toggle_hand_labels(self):
+        """Toggle hand labels display"""
+        self.display_settings["show_hand_labels"]=self.show_labels_var.get()
+        print(f"Show hand labels: {self.display_settings['show_hand__labels']}")
+    
+    def toggle_camera_info_display(self):
+        """Toggle camera into display"""
+        self.display_settings["camera_info_display"]=self.show_camera_info_var.get()
+        print(f"Show camrea info: {self.display_settings['camera_info_display']}")
+        
+    def change_input_mode(self):
+        """Change input mode based on selection"""
+        self.current_input_mode=self.mode_var.get()
+        self.overlay_dirty=True
+        self.mode_status.config(text=f"Mode: {self.current_input_mode}")
+        print(f"Input mode changed to: {self.current_input_mode}")
+    
+    def toggle_background_mode(self):
+        """Toggle background mode"""
+        self.dispaly_settings["background_mode"]=self.bg_mode_var.get()
+        print(f"Background mode: {self.display_settings['background_mode']}")
+
+    def toggle_camera_display(self):
+        """Toggle camera display"""
+        self.display_settings["show_camera"]=self.show_camera_var.get()
+        print(f"Show camera: {self.display_settings['show_camera']}")
+
+    def change_selectioon_duration(self,value):
+        """Change selection duration for POINT gesture"""
+        self.display_settings["selection_duration"]=float(value)
+        self.selection_duration =float(value)
+        print(f"Point hold duration changed to: {value} seconds")
+
+    def calcuate_distance(self,point1,point2):
+        """Calculate distance between two points"""
+        return math.sqrt((point1.x-point2.x)**2 + (point1.y-point2.y)**2)
+    
+    def detect_hand_gesture(self,landmarks):
+        """Detect gesture for a single hand with improvres accuracy"""
+        if not landmarks:
+            return "none"
+
+        #Get key points
+        thumb_tip=landmarks[4]
+        thumb_ip=landmarks[3]
+        index_tip=landmarks[8]
+        index_pip=landmarks[6]
+        index_mcp=landmarks[5]
+        middle_tip=landmarks[12]
+        middle_pip=landmarks[10]
+        ring_tip=landmarks[16]
+        ring_pip=landmarks[14]
+        pinky_tip=landmarks[20]
+        pinky_pip=landmarks[18]
+
+        # Calculate relative positions
+        index_extended = (index_tip.y<index_pip.y) and (index_tip.y<index_mcp.y)
+        middle_extended = middle_tip.y<middle_pip.y
+        ring_extended = ring_tip.y<ring_pip.y
+        pinky_extended =pinky_tip.y<pinky_pip.y
+
+        # Calculate thumb-index distance for pinch
+        thumb_index_dist =self.calculate_distance(thumb_tip,index_tip)
+
+        #Gesture classification
+        if thumb_index_dist<0.06:
+            return "pinch"
+        elif index_extended and not middle_extended and not ring_extended and not pinky_extended:
+            return "point"
+        elif not index_extended and not middle_extended and not ring_extended and not pinky_extended:
+            return "fist"
+        else:
+            return "none"
     
