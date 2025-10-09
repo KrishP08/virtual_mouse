@@ -239,4 +239,69 @@ class MultihandOverlayKeyboardWithCamera:
         self.mode_status=tk.Label(status_frame,text=f"Mode: {self.current_input_mode}",bg='#2b2b2b',fg='#00ffff',font=('Arial',10))
         self.mode_status.pack(pady=2)
 
-        #Instruction 
+        #Instructions
+        instructions=tk.Text(self.control_window,height=8,width=55,bg='#1a1a1a',fg='white',font=('Arial',9))
+        instructions.pack(padx=10,pady=10)
+
+        instructions.pack(padx=10,pady=10)
+
+        instructions.insert(tk.END,"""MULTI_HAND OVERLAY WITH CAMERA SELECTOR:
+                            CAMERA SETUP:
+                            1. Click "Select Camera" to choose your camera
+                            2. Click "Start Camera" to v=begin gesture detection
+                            3. Use CAMERA key in overlay to change camera
+                            
+                            MULTI-HAND FEATURES:
+                            > Both hands can type simultaneously
+                            >Left hand= Blue indicators
+                            >Right hand= Red indicators
+                            >Background mode for transparent overlay
+                            >Camera info display on overlay
+                            
+                            GESTURES: POINT,PINCH,FIST (same for both hands)
+                            
+                            SHORTCUTS: Q=Quit,C=Change camera,H=Help,R=Reclibrate""")
+        
+        instructions.config(state=tk.DISABLED)
+
+        # Handle window closing
+        self.control_window.protocol("WM_DELETE_WINDOW",self.on_control_window_close)
+
+        # Start control window in separate thread
+        self.control_thread=threading.Thread(target=self.run_control_window,daemon=True)
+        self.control_thread.start()
+
+    def run_control_window(self):
+        """Run control window mainloop"""
+        self.control_window.mainloo()
+    
+    def on_control_window_close(self):
+        """Handle control window closing"""
+        self.save_settngs()
+        self.running= False
+        self.control_window.quit()
+
+    def show_camera_selector(self):
+        """Show camera selector dialog"""
+        def on_camera_selected(camera_index):
+            if camera_index is not None:
+                self.selected_camera_index=camera_index
+                self.camera_info_label.config(text=f"Camera {camera_index} selected")
+                self.status_label.config(text="Camera selected - Ready to start")
+
+                # If Camera id currently running, restart with new camera
+                if self.camera_ready:
+                    self.stop_camera()
+                    time.sleep(0.5)
+                    self.start_camera()
+        
+        self.camera_selector.show_camera_selector(callback=on_camera_selected)
+    
+    def tooggle_camera(self):
+        """Start or stop camera"""
+        if not self.camera_ready:
+            self.start_camera()
+        else:
+            self.stop_camera()
+
+    
