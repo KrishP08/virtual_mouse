@@ -426,4 +426,136 @@ class MultihandOverlayKeyboardWithCamera:
             return "fist"
         else:
             return "none"
+        
+    def get_hand_pointing_position(self,landmarks,frame_shape):
+        """Get index finger tip position for a hand"""
+        if landmarks:
+            index_tip =landmarks[8]
+            h,w=frame_shape[:2]
+            x=int(index_tip.x*w)
+            y=int(index_tip.y*h)
+            return(x,y)
+        return None
     
+    def determine_hand_label(self,hand_landmarks,handedness):
+        """Determine if hand is left or right"""
+        if handedness and len(handedness.classification)>0:
+            # MediaPipe returns "Left" or "Right" from camera perspective
+            label=handedness.classification[0].label
+            # Fix the Hand labeling - don't flip since camera is alreasy mirrores
+            return label.lower()
+        
+        # Fallback: determinr by thumb position
+        thumb_tip=hand_landmarks.landmarks[4]
+        thumb_ip=hand_landmarks.landmarks[3]
+
+        if thumb_tip.x>thumb_ip.x:
+            return "right"
+        else:
+            return "left"
+        
+    def create_fullscreen_overlay(self,frame_shape):
+        """Create fullscreen keyboard overlay with multi-hand indicators and camera info"""
+        h,w=frame_shape[:2]
+        overlay=np.zeros((h,w,3),dtype=np.uint8)
+
+        layout = self.keyboard_layouts[self.current_layout]
+
+        #Calculate keyboard dimensions
+        keyboard_height=int(h*self.display_settings["keyboard_size"])
+        keyboard_width=int(w*0.95)
+        keyboard_start_y=int(h*0.35)
+        keyboard_start_x=(w-keyboard_width)//2
+
+        # Calculate key dimension
+        total_rows=len(layout)
+        key_height=(keyboard_height - 20) // total_rows
+
+        self.key_positions={}
+
+        for row_idx,row in enumerate(layout):
+            row_y=keyboard_start_y +(row_idx *(key_height+4))
+            row_key_width = (keyboard_width-20)//len(row)
+            row_start_x=keyboard_start_x+(keyboard_width-(len(row)*row_key_width))//2
+
+        for col_idx,key in enumerate(row):
+            key_x=row_start_x+(col_idx * row_key_width)
+
+            # Story key position
+            self.key_positions[key]={
+                'x':key_x+2,
+                'y':row_y+2,
+                'width':row_key_width-4,
+                'height':key_height-4,
+                'row':row_idx,
+                'col':col_idx
+            }
+
+            # Determine key color based on selection state
+            color=(50,50,50)
+            border_color=(255,255,255)
+
+            # Check if key is selected by either hand
+            left_selected=self.hand_states["left"]["selected_key"]==key
+            right_selected=self.hand_states["right"]["selected_key"]==key
+
+            if left_selected and right_selected:
+                color=(128,0,128)
+                boarder_color=(255,0,255)
+            elif left_selected:
+                color=(100,0,0)
+                boarder_color=(255,0,0)
+            elif right_selected:
+                color =(0,0,100)
+                boarder_color=(0,0,255)
+            elif key in ['POINT','PINCH','BOTH']:
+                if(key.lower()==self.current_input_mode or (key =='BOTH' and self.current_input_mode =='both')):
+                    color=(0,255,0) # Green for active mode
+                    border_color=(0,255,0)
+                else:color=(100,100,0)# Dark yellow for mode buttons
+            elif key=='CAMERA':
+                color=(128,0,128)
+            elif key in ['SPACE','BACKSPACE','ENTER']:
+                color=(100,100,100)  
+            elif key in ['NUMBERS','LETTERS']:
+                color=(0,100,200)
+            
+            # Make bottom row keys more visible
+            if row_idx >= total_rows-2: #last two rows
+                border_color=(0,255,255)
+                color=(min(color[0]+30,255),min(color[1]+30,255),min(color[2]+30,255))
+            
+            # Draw key background
+            cv2.rectangle(overlay,(key_x+2,row_y+2),
+                          (key_x+row_key_width-2,row_y+key_height-2),color,-1)
+            
+            # Draw key border
+            cv2.rectangle(overlay,(key_x+2,row_y+2),(key_x+row_key_width-2,row_y+key_height-2),boarder_color,3)
+
+            # Draw key text
+            font_scale=min(row_key_width,key_height)/100.0
+            font_scale=max(0.5,min(font_scale,1.2))
+
+            # Special text for camera key
+            display_text=key
+            if key=='CAMERA':
+                display_text=f"CAM{self.selected_camera_index}"
+
+            text_size=cv2.getTextSize(display_text,cv2.FONT_HERSHEY_SIMPLEX,font_scale,2)[0]
+            text_x=key_x+(row_key_width-text_size[0])//2
+            text_y=row_y+(key_height+text_size[1])//2
+
+            cv2.putText(overlay,display_text,(text_x,text_y),cv2.FONT_HERSHEY_SIMPLEX,font_scale,(255,255,255),2)
+        
+        # Draw mode and multi-hand indicators
+        if self.show_mode_indicator:
+            mode_text=f"Mode: {self.current_input_mode.upper()}"
+            multi_hand_text=f"Multi-Hand: {'ON' if self.multi_hand_settings['enabled'] else 'OFF'}"
+            duration_text=f"Hold Duration: {self.selection_duration}s"
+            bg_mode_text=f"Background: {'ON' if self.display_settings['background_mode'] else 'OFF'}"
+
+            cv2.putText(overlay,mode_text,(20,30),cv2.FONT_HERSHEY_SIMPLEX,0.8,(0,255,255),2)
+            cv2.putText(overlay,multi_hand_text,(20,60),cv2.FONT_HERSHEY_SIMPLEX,0.7,(255,255,0),2)
+            cv2.putText(overlay,duration_text,(20,90),cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,255,0),2)
+            cv2.putText(overlay,bg_mode_text,(20,120),cv2.FONT_HERSHEY_SIMPLEX,0.6,(0,255,0) if self.display_settings['background_mode'] else (255,0,0),2)
+            
