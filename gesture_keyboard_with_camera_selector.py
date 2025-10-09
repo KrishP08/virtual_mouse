@@ -715,3 +715,108 @@ class MultihandOverlayKeyboardWithCamera:
             cv2.circle(frame,(x,y),15,color,2)
 
             # Draw hand label if enabled
+            if self.display_settings["show_hand_labels"]:
+                label_text=f"{hand_label.upper()}"
+                cv2.putText(frame,label_text,(x-20,y-25),cv2.FONT_HERSHEY_SIMPLEX,0.5,text_color,2)
+
+            # Draw selection progress for point mode
+            selected_key = self.hand_states[hand_label]["selected_key"]
+            if (gesture == "point" and selected_key and self.input_modes[self.current_input_mode]["point"]):
+                self.draw_selection_progress(frame,pointing_pos,hand_label)
+            
+    def draw_selection_progress(self,frame,point,hand_label):
+        """Draw selection progress indicator for a specific hand"""
+        if not point:
+            return
+        
+        current_time=time.time()
+        start_time=self.hand_states[hand_label]["selection_start_time"]
+        elapsed=current_time - start_time
+        progress=min(elapsed/self.selection_duration,1.0)
+
+        x,y=point
+        radius = 25
+
+        # Choose color based on hand
+        if hand_label == "left":
+            progress_color=(255,0,0) # Blue
+        else:
+            progress_color=(0,0,255) # Red
+
+        # Draw progress arc
+        angle = int(360* progress)
+        if angle>0:
+            axes=(radius,radius)
+            cv2.ellipse(frame,(x,y),axes,-90,0,angle,progress_color,4)
+
+        # Draw progress text
+        progress_text=f"{int(progress * 100)}%"
+        text_size=cv2.getTextSize(progress_text,cv2.FONT_HERSHEY_SIMPLEX,0.5,2)[0]
+        text_x=x-text_size[0]//2
+        text_y=y-35
+        cv2.putText(frame,progress_text,(text_x,text_y),cv2.FONT_HERSHEY_SIMPLEX,0.5,progress_color,2)
+
+    def draw_status_info(self,frame):
+        """Draw status information with multi-hand and camera support"""
+        h,w=frame.shape[:2]
+
+        if not self.display_settings["show_camera"]:
+            return
+        
+        # Multi-Hand status
+        left_gesture=self.hand_states["left"]["gesture"]
+        right_gesture=self.hand_states["right"]["selected_key"]
+
+        cv2.putText(frame,f"Left Hand: {left_gesture}",(10,30),cv2.FONT_HERSHEY_SIMPLEX,0.7,(255,0,0),2)
+        cv2.putText(frame,f"Right Hand: {right_gesture}",(10,60),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,0,255),2)
+
+        # Selected keys
+        left_key=self.hand_states["left"]["selected_key"]
+        right_key=self.hand_states["right"]["selrctrd_key"]
+
+        if left_key:
+            cv2.putText(frame,f"Left Selected: {left_key}",(10,90),cv2.FONT_HERSHEY_SIMPLEX,0,6,(255,100,100),2)
+
+        if right_key:
+            cv2.putText(frame,f"Right Selected: {right_key}",(10,120),cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,100,100),2)
+
+        # Input mode and settings
+        cv2.putText(frame,f"Mode: {self.current_input_mode.upper()}",(10,150),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,255,255),2)
+
+        multi_status ="ON" if self.multi_hand_settings["enabled"] else "OFF"
+        cv2.putText(frame,f"Multi-Hand: {multi_status}",(10,180),cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,255,0),2)
+
+        # Camera info
+        cv2.putText(frame,f"Camera: {self.selected_camera_index}",(10,210),cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,255,0),2)
+
+        camera_status = "ACTIVE" if self.camera_ready else "STOPPED"
+        status_color=(0,255,0) if self.camera_ready else (0,0,255)
+        cv2.putText(frame,f"Status: {camera_status}",(10,240),cv2.FONT_HERSHEY_SIMPLEX,0.6,status_color,2)
+
+        # Help text
+        if self.show_help:
+            help_text = [
+                f"Hold Duration: {self.selection_duration}s",
+                "Blue = Left Hand,Red = Right Hand",
+                "Both hands can type simultaneously",
+                "Q: Quit,C: Change camera,H: Help"
+            ]
+
+            for i,text in enumerate(help_text):
+                cv2.putText(frame,text,(w-450,30+i*25),cv2.FONT_HERSHEY_SIMPLEX,0.5,(200,200,200),1)
+
+    def process_multi_hand_gestures(self,hand_data):
+        """Process gestures for multiple hands"""
+        current_time=time.time()
+        mode_settings=self.input_modes[self.current_input_mode]
+
+        # Update hand states for hands that are on longer detected
+        current_hand_labels=[hand_info["label"] for hand_info in hand_data]
+        for hand_label in ["left","right"]:
+            if hand_label not in current_hand_labels:
+                # Hand is not currently detected
+                self.hand_states[hand_label]["gesture"]="none"
+                # clera selection if it's been gone for a while
+                if self.hand_states[hand_label]["selection_start_time"]>3.0:
+                    self.hand_states[hand_label]["selected_key"]=None
+                    # self.overlay_cache=True
