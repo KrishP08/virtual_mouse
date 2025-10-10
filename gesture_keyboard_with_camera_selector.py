@@ -799,7 +799,7 @@ class MultihandOverlayKeyboardWithCamera:
                 f"Hold Duration: {self.selection_duration}s",
                 "Blue = Left Hand,Red = Right Hand",
                 "Both hands can type simultaneously",
-                "Q: Quit,C: Change camera,H: Help"
+                "Q: Quit,C: Change cameraa,H: Help"
             ]
 
             for i,text in enumerate(help_text):
@@ -817,6 +817,104 @@ class MultihandOverlayKeyboardWithCamera:
                 # Hand is not currently detected
                 self.hand_states[hand_label]["gesture"]="none"
                 # clera selection if it's been gone for a while
-                if self.hand_states[hand_label]["selection_start_time"]>3.0:
+                if self.hand_states[hand_label]["selected_key"] and current_time - self.hand_states[hand_label]["selection_start_time"] > 3.0:
+                    self.hand_states[hand_label]["selected_key"] = None
+                    self.overlay_dirty = True
+
+        # Process each hand
+        for hand_info in hand_data:
+            hand_label=hand_info["label"]
+            gesture=hand_info["gesture"]
+            pointing_pos=hand_info["pointing_pos"]
+
+            # Skip if hand is disabled by priority settings
+            priority=self.multi_hand_settings["hand_priority"]
+            if priority != "both" and priority != hand_label:
+                continue
+
+            # update hand state
+            self.hand_states[hand_label]["gesture"]=gesture
+            self.hand_states[hand_label]["pointing_pos"]= pointing_pos
+
+            # Process point gesture
+            if gesture == "point" and pointing_pos and mode_settings["point"]:
+                key=self.map_point_to_key(pointing_pos)
+
+                if key and key !=self.hand_states[hand_label]["selected_key"]:
+                    # New key selected
+                    self.hand_states[hand_label]["selected_key"]=key
+                    self.hand_states[hand_label]["selection_start_time"]=current_time
+                    self.overlay_dirty=True
+                
+                elif key == self.hand_states[hand_label]["selected_key"]:
+                    # Continue selection same key
+                    start_time= self.hand_states[hand_label]["selection_start_time"]
+                    elapsed=current_time-start_time
+
+                    if elapsed>=self.selection_duration:
+                        #Type the key
+                        if self.type_key(key,hand_label):
+                            self.hand_states[hand_label]["selected_key"]=None
+                            self.overlay_dirty=True
+            
+            # Process pinch gesture
+            elif gesture == "pinch" and pointing_pos and mode_settings["pinch"]:
+                key=self.map_point_to_key(pointing_pos)
+                if key:
+                    if self.type_key(key,hand_label):
+                        self.hand_states[hand_label]["selected_key"]=None
+                        self.overlay_dirty=True
+                    
+            # Process fist gesture
+            elif gesture == "fist":
+                if self.hand_states[hand_label]["selected_key"]:
                     self.hand_states[hand_label]["selected_key"]=None
-                    # self.overlay_cache=True
+                    self.overlay_dirty=True
+    
+    def run(self):
+        """Main Application loop with multi-hand overlay and camera support"""
+        print("Starting Multi-Hand Overlay gesture Keyboard with Camera Selector...")
+        print(f"Selected camera: {self.selscted_camera_index}")
+        print(f"Multi-Hand tracking: {self.multi_hand_settings['enabled']}")
+        print("Use the control window to select camera and change settings!")
+
+        # Create camera window
+        cv2.namedWindow('Multi-Hand Gesture Keyboard with Camera Selector',cv2.WINDOW_NORMAL)
+
+        while self.running:
+            if not self.camera_ready or not self.cap:
+                time.sleep(0.1)
+                continue
+
+            ret,frame=self.cap.read()
+            if not ret:
+                continue
+
+            #Flip frame for mirror effect
+            frame=cv2.flip(frame,1)
+            h,w=frame.shape[:2]
+
+            # Process hand detection
+            rgb_frame=cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+            results=self.hands.process(rgb_frame)
+
+            hand_data=[]
+
+            if results.multi_hand_landmarks and results.multi_handedness:
+                for hand_landmarks,handedness in zip(results.multi_hand_landmarks,results.multi_handedness):
+                    # Determine hand label
+                    hand_label =self.determine_hand_label(hand_landmarks,handedness)
+
+                    # Draw hand landmarks if camera is visible
+                    if self.display_settings["show_camera"]:
+                        # Use different colors for different hands
+                        if hand_label == "left":
+                            landmarks_color =(255,0,0) #Blue for left
+                            connection_color=(200,0,0)
+                        else:
+                            landmarks_color=(0,0,255) # Red for right
+                            connection_color=(0,0,200)
+
+                        self.mp_draw.draw_landmarks(frame,hand_landmarks,self.mp_hands.HAND_CONNECTIONS,landmarks_drawing_spec=mp.solutions.drawing_utils.DrawingSpec(color=landmarks_color,thinckness=1,circle_radius=1),connection_drawing_spec=mp.solutions.drawing_utils.DrawingSpec(color=connection_color,thickness=1))
+
+                    # Detect gesture and pointing position
