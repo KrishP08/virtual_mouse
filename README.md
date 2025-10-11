@@ -14,15 +14,14 @@ This document covers setup, running, controls/usage, packaging into a Windows .e
 Keep all three scripts in the same folder:
 
 \`\`\`
-gesture-keyboard/
+gesture-Control/
 ├─ scripts/
 │  ├─ Launcher.py
 │  ├─ virtual_mouse.py
 │  ├─ multi_hand_overlay_keyboard.py
 │  └─ (optional) other helpers…
 ├─ README.md
-└─ docs/
-   └─ images/
+└─ images/
       └─ (place your screenshots here)
 \`\`\`
 
