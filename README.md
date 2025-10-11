@@ -162,13 +162,13 @@ Optional: one-file build (advanced)
 - Packs everything into a single exe, but your unchanged code may not find the two scripts because PyInstaller extracts to a temp folder at runtime.
 - Command (if you still want to try):
   \`\`\`
-  pyinstaller ^
+- pyinstaller ^
 --onefile ^
 --collect-all mediapipe ^
 --collect-all cv2 ^
 virtual_mouse.py
 
-pyinstaller ^
+- pyinstaller ^
 --onefile ^
 --collect-all mediapipe ^
 --collect-all cv2 ^
@@ -177,7 +177,7 @@ pyinstaller ^
 --hidden-import mediapipe.python.solutions.drawing_utils ^
 multi_hand_overlay_keyboard.py
 - Copy two file in main Folder of your project and then
-pyinstaller ^
+- pyinstaller ^
 --onefile ^
 --collect-all customtkinter ^
 --add-data "dist/virtual_mouse.exe;." ^
