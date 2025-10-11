@@ -223,8 +223,8 @@ Add images:
 - Place screenshots in `docs/images/` (create the folder if it doesn’t exist).
 - Reference in Markdown like:
   \`\`\`
-  ![Launcher UI](docs/images/launcher-ui.png)
-  ![Keyboard Overlay](docs/images/keyboard-overlay.png)
+  ![Launcher UI](Images/launcher.png)
+  ![Keyboard Overlay](Images/keyboard-overlay.png)
   \`\`\`
 
 Add a YouTube link with a clickable thumbnail:

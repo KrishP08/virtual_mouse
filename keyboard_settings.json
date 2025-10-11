@@ -6,7 +6,7 @@
     "show_camera": true,
     "always_on_top": true,
     "keyboard_size": 0.6,
-    "window_transparency": 0.7,
+    "window_transparency": 0.8,
     "selection_duration": 2.0,
     "show_hand_labels": true
   },
