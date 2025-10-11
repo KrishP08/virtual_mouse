@@ -83,32 +83,32 @@ class LauncherApp(ctk.CTk):
 
         ctk.CTkButton(inner, text=f"Run {title}", command=run_cb).pack(anchor="e", pady=(10, 0))
         return card
-    
-    def _on_theme_change(self,value):
+
+    def _on_theme_change(self, value):
         ctk.set_appearance_mode(value.lower())
 
     def _run_mouse(self):
-        self._launch_tool("Virtual Mouse",MOUSE_EXE,MOUSE_SCRIPT)
-    
+        self._launch_tool("Virtual Mouse", MOUSE_EXE, MOUSE_SCRIPT)
+
     def _run_keyboard(self):
-        self._launch_tool("Virtual Keyboard",KEYBOARD_EXE,KEYBOARD_SCRIPT)
-    
-    def _launch_tool(self,name,exe_path,py_path):
+        self._launch_tool("Virtual Keyboard", KEYBOARD_EXE, KEYBOARD_SCRIPT)
+
+    def _launch_tool(self, name, exe_path, py_path):
         if self.process and self.process.poll() is None:
-            mb.showinfo("Already running","Stop the Current process before starting another.")
+            mb.showinfo("Already running", "Stop the current process before starting another.")
             return
-        
+
         try:
-            self.state_label.configure(text=f"Running: {name}")
+            self.status_label.configure(text=f"Running: {name}")
 
             if os.path.exists(exe_path):
                 # Run the packaged exe
-                self.process=subprocess.Popen([exe_path])
+                self.process = subprocess.Popen([exe_path])
             elif os.path.exists(py_path):
-                #Run the .py file directly (for dev testing)
-                self.process=subprocess.Popen([sys.executable,py_path])
+                # Run the .py file directly (for dev testing)
+                self.process = subprocess.Popen([sys.executable, py_path])
             else:
-                mb.showerror("FIle Not Found",f"Nether {exe_path} nor {py_path} exists")
+                mb.showerror("File Not Found", f"Neither {exe_path} nor {py_path} exists.")
                 return
         except Exception as e:
             mb.showerror("Failed to start", str(e))
@@ -125,26 +125,26 @@ class LauncherApp(ctk.CTk):
             if os.name == "nt":
                 self.process.terminate()
             else:
-                os.killpg(os.getpgid(self.process.pid),signal.SIGTERM)
+                os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
             time.sleep(0.5)
         except Exception as e:
-            mb.showerror("Stop Failed",str(e))
+            mb.showerror("Stop failed", str(e))
         finally:
-            self.process=None
+            self.process = None
             self.status_label.configure(text="Idle")
             self._refresh_buttons()
-        
+
     def _refresh_buttons(self):
         running = self.process is not None and self.process.poll() is None
         self.stop_btn.configure(state=("normal" if running else "disabled"))
-    
+
     def _on_close(self):
         if self.process and self.process.poll() is None:
-            if not mb.askyesno("Quit","A process is still running. Stop it and exit?"):
+            if not mb.askyesno("Quit", "A process is still running. Stop it and exit?"):
                 return
             self._stop_process()
         self.destroy()
 
-if __name__=="__main__":
-    app=LauncherApp()
+if __name__ == "__main__":
+    app = LauncherApp()
     app.mainloop()
