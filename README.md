@@ -219,10 +219,9 @@ l.py
 ## 8) Add Screenshots and a YouTube Demo
 
 Add images:
-- Place screenshots in `docs/images/` (create the folder if it doesn’t exist).
+- Place screenshots in `Images/` (create the folder if it doesn’t exist).
 - Reference in Markdown like:
   \`\`\`
-  ![Launcher UI](Images/launcher.png)
   ![Keyboard Overlay](Images/keyboard-overlay.png)
   \`\`\`
 
