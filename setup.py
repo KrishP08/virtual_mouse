@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="virtual_mouse",
+    name="virtual_mouse_yax_hackberry",
     version="0.1.0",
     author="Yax Patel",
     author_email="7233kp@gmail.com",
