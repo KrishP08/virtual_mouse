@@ -1,0 +1,19 @@
+{
+  "input_mode": "both",
+  "display": {
+    "background_mode": false,
+    "window_alpha": 0.8,
+    "show_camera": true,
+    "always_on_top": true,
+    "keyboard_size": 0.6,
+    "window_transparency": 0.3,
+    "selection_duration": 2.0,
+    "show_hand_labels": true
+  },
+  "multi_hand": {
+    "enabled": true,
+    "simultaneous_typing": true,
+    "hand_priority": "both",
+    "conflict_resolution": "first_detected"
+  }
+}
