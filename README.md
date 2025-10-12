@@ -8,7 +8,7 @@ A modern set of Python tools to control your PC with hand gestures using your we
 This document covers setup, running, controls/usage, packaging into a Windows .exe, and how to add screenshots and a YouTube demo.
 
 ---
-
+##pypl release link: https://pypi.org/project/virtual-mouse-yax-hackberry/0.1.0/
 ## 1) Project Structure
 
 Keep all three scripts in the same folder:
