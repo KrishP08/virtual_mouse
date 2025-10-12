@@ -219,16 +219,15 @@ l.py
 ## 8) Add Screenshots and a YouTube Demo
 
 Add images:
-- Place screenshots in `Images/` (create the folder if it doesn’t exist).
-- Reference in Markdown like:
+
   \`\`\`
   ![Keyboard Overlay](Images/keyboard-overlay.png)
   \`\`\`
 
 Add a YouTube link with a clickable thumbnail:
-- Replace `VIDEO_ID` with your YouTube video ID:
+
   \`\`\`
-  [![Demo on YouTube](https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+  [![Demo on YouTube](https://img.youtube.com/vi/lYKVjATHn3k/hqdefault.jpg)](https://www.youtube.com/watch?v=lYKVjATHn3k)
   \`\`\`
 
 ---
